@@ -17,5 +17,8 @@
 	},
 	"devDependencies": {
 		"@wordpress/scripts": "^26.11.0"
+	},
+	"dependencies": {
+		"styled-components": "^6.0.7"
 	}
 }

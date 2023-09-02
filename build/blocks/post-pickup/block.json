@@ -8,7 +8,100 @@
   "supports": {
     "html": false
   },
-  "textdomain": "post-blocks",
+  "attributes": {
+    "cssStyles": {
+      "type": "string"
+    },
+    "styleClass": {
+      "type": "string"
+    },
+    "bgColor": {
+      "type": "string",
+      "default": "#ffffff"
+    },
+    "margin_value": {
+      "type": "object",
+      "default": {
+        "top": "10px",
+        "left": "10px",
+        "bottom": "10px",
+        "right": "10px"
+      }
+    },
+    "padding_value": {
+      "type": "object",
+      "default": {
+        "top": "10px",
+        "left": "10px",
+        "bottom": "10px",
+        "right": "10px"
+      }
+    },
+    "bgColor_form": {
+      "type": "string"
+    },
+    "bgGradient_form": {
+      "type": "string"
+    },
+    "radius_value": {
+      "type": "object",
+      "default": {
+        "value": "5px"
+      }
+    },
+    "border_value": {
+      "type": "object",
+      "default": {
+        "width": "1px",
+        "color": "#000000",
+        "style": "solid"
+      }
+    },
+    "shadow_element": {
+      "type": "object",
+      "default": {
+        "shadowType": "nomal",
+        "spread": 2,
+        "lateral": 2,
+        "longitude": 2,
+        "nomalBlur": 3,
+        "shadowColor": "#9F9F9F",
+        "distance": 5,
+        "intensity": 5,
+        "opacity": 0.5,
+        "depth": 5,
+        "blur": 5,
+        "bdBlur": 5,
+        "expand": 5,
+        "glassblur": 5,
+        "glassopa": 0.5,
+        "newDirection": "top_left",
+        "clayDirection": "top",
+        "embos": "swell",
+        "hasOutline": true
+      }
+    },
+    "shadow_result": {
+      "type": "object"
+    },
+    "is_shadow": {
+      "type": "boolean",
+      "default": false
+    },
+    "numberOfItems": {
+      "type": "number",
+      "default": 3
+    },
+    "displayDate": {
+      "type": "boolean",
+      "default": true
+    },
+    "displayThumbnail": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "textdomain": "itmar_post_blocks",
   "editorScript": "file:./index.js",
   "editorStyle": "file:./index.css",
   "style": "file:./style-index.css",
