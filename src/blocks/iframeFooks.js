@@ -44,7 +44,7 @@ export function useFontawesomeIframe() {
 
       // Return a cleanup function to remove the script tag
       return () => {
-        iframeDocument.body.removeChild(scriptElement);
+        iframeDocument.body?.removeChild(scriptElement);
       };
     }
   }, []);
