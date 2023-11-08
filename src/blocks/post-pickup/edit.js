@@ -149,7 +149,6 @@ export default function Edit({ attributes, setAttributes }) {
 	useDeepCompareEffect(() => {
 		const sheet = new ServerStyleSheet();
 		const htmlString = renderToString(sheet.collectStyles(<StyleComp attributes={styleAttributes} />));
-		console.log(htmlString)
 		//スタイルオブジェクト
 		const styleTags = sheet.getStyleTags();
 		//スタイルのクラス名
