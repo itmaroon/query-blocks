@@ -22,6 +22,9 @@
  *
  * @see https://developer.wordpress.org/reference/functions/register_block_type/
  */
+
+ if ( ! defined( 'ABSPATH' ) ) exit;
+ 
 function itmar_post_blocks_block_init() {
 	foreach (glob(plugin_dir_path(__FILE__) . 'build/blocks/*') as $block) {
 			register_block_type($block);
