@@ -4,6 +4,7 @@
 	$args = array(
 		'numberposts'	=> $attributes['numberOfItems'],
 	);
+	
 	$styles = isset($attributes['cssStyles']) ? $attributes['cssStyles'] : '';
 	$style_class = isset($attributes['styleClass']) ? $attributes['styleClass'] : '';
 	$additional_styles = "background-color: {$attributes['bgColor']}; overflow: hidden;";
@@ -42,3 +43,5 @@
 
 	echo $styles;  // スタイルタグを出力
 	echo $output;
+	var_dump($styles);
+	
