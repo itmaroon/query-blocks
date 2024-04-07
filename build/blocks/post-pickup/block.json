@@ -88,6 +88,10 @@
       "type": "boolean",
       "default": false
     },
+    "is_slide": {
+      "type": "boolean",
+      "default": false
+    },
     "numberOfItems": {
       "type": "number",
       "default": 3
