@@ -1,5 +1,5 @@
 import styled, { css } from 'styled-components';
-import { radius_prm, space_prm, convertToScss, borderProperty } from '../cssPropertes';
+import { radius_prm, space_prm, convertToScss, borderProperty } from 'itmar-block-packages';
 
 // カスタムコンポーネントの定義
 const StyledDivComponent = ({ className, children }) => {

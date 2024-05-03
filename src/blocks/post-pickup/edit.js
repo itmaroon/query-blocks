@@ -27,7 +27,7 @@ import {
 } from "@wordpress/components";
 import { useEffect } from "@wordpress/element";
 
-import { useDeepCompareEffect } from "../CustomFooks";
+import { useDeepCompareEffect } from "itmar-block-packages";
 import { useStyleIframe } from "../iframeFooks";
 
 //スペースのリセットバリュー

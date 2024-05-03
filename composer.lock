@@ -1,0 +1,56 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "4e70c29a1ac21550f2c24fe04298456c",
+    "packages": [
+        {
+            "name": "itmar/block-class-package",
+            "version": "v1.0.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/itmaroon/block-class-package.git",
+                "reference": "a8d6f40d829e41fd6f1ea0819e62f111115bb0b2"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/itmaroon/block-class-package/zipball/a8d6f40d829e41fd6f1ea0819e62f111115bb0b2",
+                "reference": "a8d6f40d829e41fd6f1ea0819e62f111115bb0b2",
+                "shasum": ""
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Itmar\\BlockClassPakage\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "itmaroon",
+                    "email": "master@itmaroon.net"
+                }
+            ],
+            "description": "Gutenberg block class package",
+            "support": {
+                "issues": "https://github.com/itmaroon/block-class-package/issues",
+                "source": "https://github.com/itmaroon/block-class-package/tree/v1.0.3"
+            },
+            "time": "2024-04-08T07:32:22+00:00"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": [],
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": [],
+    "platform-dev": [],
+    "plugin-api-version": "2.6.0"
+}
