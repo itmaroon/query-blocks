@@ -27,7 +27,12 @@ import {
 } from "@wordpress/components";
 import { useEffect } from "@wordpress/element";
 
-import { useDeepCompareEffect } from "itmar-block-packages";
+import {
+	useDeepCompareEffect,
+	ArchiveSelectControl,
+	TermChoiceControl,
+	//FieldChoiceControl,
+} from "itmar-block-packages";
 import { useStyleIframe } from "../iframeFooks";
 
 //スペースのリセットバリュー
@@ -63,6 +68,9 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		border_value,
 		is_shadow,
 		is_slide,
+		selectedSlug,
+		choiceTerms,
+		choiceFields,
 	} = attributes;
 
 	const {
@@ -88,7 +96,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				_embed: true,
 			});
 		},
-		[numberOfItems]
+		[numberOfItems],
 	);
 
 	//親ブロックがitmar/slide-mvであればis_slideをオンにする
@@ -103,7 +111,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				: null;
 			return nearestParentName === "itmar/slide-mv";
 		},
-		[clientId]
+		[clientId],
 	);
 
 	useEffect(() => {
@@ -138,7 +146,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 										<a href={post.link}>
 											{post.title.rendered
 												? post.title.rendered
-												: __("No title", "itmar_post_blocks")}
+												: __("No title", "post-blocks")}
 										</a>
 									</h3>
 									{displayDate && (
@@ -161,7 +169,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	useDeepCompareEffect(() => {
 		const sheet = new ServerStyleSheet();
 		const htmlString = renderToString(
-			sheet.collectStyles(<StyleComp attributes={styleAttributes} />)
+			sheet.collectStyles(<StyleComp attributes={styleAttributes} />),
 		);
 		//スタイルオブジェクト
 		const styleTags = sheet.getStyleTags();
@@ -178,7 +186,36 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	return (
 		<>
 			<InspectorControls group="settings">
-				<PanelBody title={__("Content Settings", "itmar_post_blocks")}>
+				<PanelBody title={__("Content Settings", "post-blocks")}>
+					<ArchiveSelectControl
+						selectedSlug={selectedSlug}
+						label={__("Select Post Type", "post-blocks")}
+						homeUrl={post_blocks.home_url}
+						onChange={(postInfo) => {
+							if (postInfo) {
+								setAttributes({ selectedSlug: postInfo.slug });
+							}
+						}}
+					/>
+					<TermChoiceControl
+						type="taxonomy"
+						label={__("Choice Taxsonomy", "post-blocks")}
+						selectedSlug={selectedSlug}
+						choiceTerms={choiceTerms}
+						onChange={(newChoiceTerms) =>
+							setAttributes({ choiceTerms: newChoiceTerms })
+						}
+					/>
+					{/* <FieldChoiceControl
+						type="field"
+						label={__("Choice Field", "post-blocks")}
+						selectedSlug={selectedSlug}
+						choiceTerms={choiceFields}
+						onChange={(newChoiceFields) =>
+							setAttributes({ choiceFields: newChoiceFields })
+						}
+					/> */}
+
 					<PanelRow className="itmar_post_blocks_pannel">
 						<QueryControls
 							numberOfItems={numberOfItems}
@@ -191,7 +228,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					</PanelRow>
 					<PanelRow>
 						<ToggleControl
-							label={__("Show Featured Image", "itmar_post_blocks")}
+							label={__("Show Featured Image", "post-blocks")}
 							checked={displayThumbnail}
 							onChange={() =>
 								setAttributes({ displayThumbnail: !displayThumbnail })
@@ -200,7 +237,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					</PanelRow>
 					<PanelRow>
 						<ToggleControl
-							label={__("Show Date", "itmar_post_blocks")}
+							label={__("Show Date", "post-blocks")}
 							checked={displayDate}
 							onChange={() => setAttributes({ displayDate: !displayDate })}
 						/>
@@ -209,16 +246,16 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			</InspectorControls>
 			<InspectorControls group="styles">
 				<PanelBody
-					title={__("Global settings", "itmar_post_blocks")}
+					title={__("Global settings", "post-blocks")}
 					initialOpen={false}
 					className="check_design_ctrl"
 				>
 					<PanelColorGradientSettings
-						title={__("Background Color Setting", "itmar_post_blocks")}
+						title={__("Background Color Setting", "post-blocks")}
 						settings={[
 							{
 								colorValue: bgColor,
-								label: __("Choose Block Background color", "itmar_post_blocks"),
+								label: __("Choose Block Background color", "post-blocks"),
 								onColorChange: (newValue) =>
 									setAttributes({ bgColor: newValue }),
 							},
@@ -226,7 +263,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 								colorValue: bgColor_form,
 								gradientValue: bgGradient_form,
 
-								label: __("Choose Form Background color", "itmar_post_blocks"),
+								label: __("Choose Form Background color", "post-blocks"),
 								onColorChange: (newValue) => {
 									setAttributes({
 										bgGradient_form: newValue === undefined ? "" : newValue,
@@ -238,7 +275,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 						]}
 					/>
 					<BoxControl
-						label={__("Margin settings", "itmar_post_blocks")}
+						label={__("Margin settings", "post-blocks")}
 						values={margin_value}
 						onChange={(value) => setAttributes({ margin_value: value })}
 						units={units} // 許可する単位
@@ -247,7 +284,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					/>
 
 					<BoxControl
-						label={__("Padding settings", "itmar_post_blocks")}
+						label={__("Padding settings", "post-blocks")}
 						values={padding_value}
 						onChange={(value) => setAttributes({ padding_value: value })}
 						units={units} // 許可する単位
@@ -255,7 +292,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 						resetValues={padding_resetValues} // リセット時の値
 					/>
 					<PanelBody
-						title={__("Border Settings", "itmar_post_blocks")}
+						title={__("Border Settings", "post-blocks")}
 						initialOpen={false}
 						className="border_design_ctrl"
 					>
@@ -283,7 +320,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 						/>
 					</PanelBody>
 					<ToggleControl
-						label={__("Is Shadow", "itmar_post_blocks")}
+						label={__("Is Shadow", "post-blocks")}
 						checked={is_shadow}
 						onChange={(newVal) => {
 							setAttributes({ is_shadow: newVal });

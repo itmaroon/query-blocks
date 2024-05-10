@@ -1,5 +1,17 @@
 {
+    "name": "itmaroon/post-blocks",
+    "autoload": {
+        "psr-4": {
+            "Itmaroon\\PostBlocks\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "itmaroon",
+            "email": "itmaroon@icloud.com"
+        }
+    ],
     "require": {
-        "itmar/block-class-package": "^1.0"
+        "itmar/block-class-package": "^1.1"
     }
 }

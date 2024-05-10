@@ -27,16 +27,29 @@
 //PHPファイルに対する直接アクセスを禁止
 if (!defined('ABSPATH')) exit;
 
+//composerによるリモートリポジトリからの読み込みを要求
+require_once __DIR__ . '/vendor/autoload.php';
+
 // プラグイン情報取得に必要なファイルを読み込む
 if (!function_exists('get_plugin_data')) {
 	require_once(ABSPATH . 'wp-admin/includes/plugin.php');
 }
-//composerによるリモートリポジトリからの読み込みを要求
-require_once __DIR__ . '/vendor/autoload.php';
+
 
 $block_entry = new \Itmar\BlockClassPakage\ItmarEntryClass();
 
+//ブロックの登録
 add_action('init', function () use ($block_entry) {
 	$plugin_data = get_plugin_data(__FILE__);
 	$block_entry->block_init($plugin_data['TextDomain'], __FILE__);
+});
+
+//共通スタイルの読み込み
+add_action('enqueue_block_assets', function () use ($block_entry) {
+	$pluginParentDir = dirname(__DIR__, 2);
+	$block_entry->enqueueCommonStyles($pluginParentDir, true, "itmar-block-packages");
+});
+add_action('wp_enqueue_scripts', function () use ($block_entry) {
+	$pluginParentDir = dirname(__DIR__, 2);
+	$block_entry->enqueueCommonStyles($pluginParentDir, false, "itmar-block-packages");
 });
