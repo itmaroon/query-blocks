@@ -31,7 +31,7 @@ import {
 	useDeepCompareEffect,
 	ArchiveSelectControl,
 	TermChoiceControl,
-	//FieldChoiceControl,
+	FieldChoiceControl,
 } from "itmar-block-packages";
 import { useStyleIframe } from "../iframeFooks";
 
@@ -69,6 +69,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		is_shadow,
 		is_slide,
 		selectedSlug,
+		selectedRest,
 		choiceTerms,
 		choiceFields,
 	} = attributes;
@@ -88,15 +89,50 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	//サイトエディタの場合はiframeにスタイルをわたす。
 	useStyleIframe(StyleComp, attributes);
 
+	//choiseTerms属性からクエリー用の配列を生成
+	const getSelectedTaxonomyTerms = () => {
+		const taxonomyTerms = choiceTerms.reduce((acc, { taxonomy, term }) => {
+			if (taxonomy === "category") {
+				if (acc.hasOwnProperty("categories")) {
+					acc["categories"] = `${acc["categories"]},${term.id}`;
+				} else {
+					acc["categories"] = term.id;
+				}
+			} else if (taxonomy === "post_tag") {
+				if (acc.hasOwnProperty("tags")) {
+					acc["tags"] = `${acc["tags"]},${term.id}`;
+				} else {
+					acc["tags"] = term.id;
+				}
+			} else {
+				if (acc.hasOwnProperty(taxonomy)) {
+					acc[taxonomy] = `${acc[taxonomy]},${term.id}`;
+				} else {
+					acc[taxonomy] = term.id;
+				}
+			}
+			return acc;
+		}, {});
+
+		return {
+			...taxonomyTerms,
+			tax_relation: "OR",
+		};
+	};
+
 	//coreストアからpostオブジェクトを取得する
 	const posts = useSelect(
 		(select) => {
-			return select("core").getEntityRecords("postType", "tutorial", {
+			const { getEntityRecords } = select("core");
+			const taxonomyTerms = getSelectedTaxonomyTerms();
+			console.log(taxonomyTerms);
+			return getEntityRecords("postType", selectedSlug, {
 				per_page: numberOfItems,
 				_embed: true,
+				...taxonomyTerms,
 			});
 		},
-		[numberOfItems],
+		[numberOfItems, selectedSlug, choiceTerms],
 	);
 
 	//親ブロックがitmar/slide-mvであればis_slideをオンにする
@@ -193,28 +229,34 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 						homeUrl={post_blocks.home_url}
 						onChange={(postInfo) => {
 							if (postInfo) {
-								setAttributes({ selectedSlug: postInfo.slug });
+								setAttributes({
+									selectedSlug: postInfo.slug,
+									selectedRest: postInfo.rest_base,
+								});
 							}
 						}}
 					/>
-					<TermChoiceControl
-						type="taxonomy"
-						label={__("Choice Taxsonomy", "post-blocks")}
-						selectedSlug={selectedSlug}
-						choiceTerms={choiceTerms}
-						onChange={(newChoiceTerms) =>
-							setAttributes({ choiceTerms: newChoiceTerms })
-						}
-					/>
-					{/* <FieldChoiceControl
-						type="field"
-						label={__("Choice Field", "post-blocks")}
-						selectedSlug={selectedSlug}
-						choiceTerms={choiceFields}
-						onChange={(newChoiceFields) =>
-							setAttributes({ choiceFields: newChoiceFields })
-						}
-					/> */}
+					<PanelBody title={__("Choice Taxsonomy", "post-blocks")}>
+						<TermChoiceControl
+							type="taxonomy"
+							selectedSlug={selectedSlug}
+							choiceItems={choiceTerms}
+							onChange={(newChoiceTerms) => {
+								setAttributes({ choiceTerms: newChoiceTerms });
+							}}
+						/>
+					</PanelBody>
+
+					<PanelBody title={__("Choice Field", "post-blocks")}>
+						<FieldChoiceControl
+							type="field"
+							selectedSlug={selectedRest}
+							choiceItems={choiceFields}
+							onChange={(newChoiceFields) =>
+								setAttributes({ choiceFields: newChoiceFields })
+							}
+						/>
+					</PanelBody>
 
 					<PanelRow className="itmar_post_blocks_pannel">
 						<QueryControls

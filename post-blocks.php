@@ -43,13 +43,3 @@ add_action('init', function () use ($block_entry) {
 	$plugin_data = get_plugin_data(__FILE__);
 	$block_entry->block_init($plugin_data['TextDomain'], __FILE__);
 });
-
-//共通スタイルの読み込み
-add_action('enqueue_block_assets', function () use ($block_entry) {
-	$pluginParentDir = dirname(__DIR__, 2);
-	$block_entry->enqueueCommonStyles($pluginParentDir, true, "itmar-block-packages");
-});
-add_action('wp_enqueue_scripts', function () use ($block_entry) {
-	$pluginParentDir = dirname(__DIR__, 2);
-	$block_entry->enqueueCommonStyles($pluginParentDir, false, "itmar-block-packages");
-});

@@ -100,6 +100,10 @@
 			"type": "string",
 			"default": ""
 		},
+		"selectedRest":{
+			"type": "string",
+			"default": ""
+		},
 		"choiceTerms":{
 			"type": "array",
 			"default": []
