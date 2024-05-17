@@ -104,6 +104,10 @@
       "type": "string",
       "default": ""
     },
+    "taxRelateType": {
+      "type": "string",
+      "default": "OR"
+    },
     "choiceTerms": {
       "type": "array",
       "default": []

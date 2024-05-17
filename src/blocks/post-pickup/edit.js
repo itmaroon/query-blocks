@@ -22,6 +22,7 @@ import {
 	PanelRow,
 	QueryControls,
 	ToggleControl,
+	RadioControl,
 	__experimentalBoxControl as BoxControl,
 	__experimentalBorderBoxControl as BorderBoxControl,
 } from "@wordpress/components";
@@ -71,6 +72,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		selectedSlug,
 		selectedRest,
 		choiceTerms,
+		taxRelateType,
 		choiceFields,
 	} = attributes;
 
@@ -116,7 +118,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 
 		return {
 			...taxonomyTerms,
-			tax_relation: "OR",
+			tax_relation: taxRelateType,
 		};
 	};
 
@@ -132,7 +134,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				...taxonomyTerms,
 			});
 		},
-		[numberOfItems, selectedSlug, choiceTerms],
+		[numberOfItems, selectedSlug, choiceTerms, taxRelateType],
 	);
 
 	//親ブロックがitmar/slide-mvであればis_slideをオンにする
@@ -237,6 +239,19 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 						}}
 					/>
 					<PanelBody title={__("Choice Taxsonomy", "post-blocks")}>
+						<div className="itmar_select_row">
+							<RadioControl
+								label={__("The relationship between taxonomies", "post-blocks")}
+								selected={taxRelateType}
+								options={[
+									{ label: "AND", value: "AND" },
+									{ label: "OR", value: "OR" },
+								]}
+								onChange={(changeOption) =>
+									setAttributes({ taxRelateType: changeOption })
+								}
+							/>
+						</div>
 						<TermChoiceControl
 							type="taxonomy"
 							selectedSlug={selectedSlug}
