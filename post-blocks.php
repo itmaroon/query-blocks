@@ -43,3 +43,20 @@ add_action('init', function () use ($block_entry) {
 	$plugin_data = get_plugin_data(__FILE__);
 	$block_entry->block_init($plugin_data['TextDomain'], __FILE__);
 });
+
+function itmar_post_blocks_front()
+{
+	//管理画面以外（フロントエンド側でのみ読み込む）
+	if (!is_admin()) {
+		$script_path = plugin_dir_path(__FILE__) . 'build/front-module.js';
+		wp_enqueue_script(
+			'post_front_handle',
+			plugins_url('build/front-module.js?', __FILE__),
+			array(),
+			filemtime($script_path),
+			true
+		);
+	}
+}
+
+add_action('enqueue_block_assets', 'itmar_post_blocks_front');

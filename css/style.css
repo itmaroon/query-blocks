@@ -4,7 +4,7 @@
  *
  * Replace them with your own styles or remove the file completely.
  */
-.wp-block-itmar-pickup-posts {
-  display: flex;
+.wp-block-itmar-pickup-posts .unit_hide {
+  display: none;
 }
 /*# sourceMappingURL=style.css.map */
