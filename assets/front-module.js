@@ -4,6 +4,43 @@ import {
 	format, // 日付のフォーマット
 } from "@wordpress/date";
 
+// プロミスを格納する配列
+const promises = [];
+
+const getBlockMapValue = (blockMap, fieldName) => {
+	//blockMapのキーが.で区切られている場合は、最後の.の後の文字列から
+	for (const key in blockMap) {
+		if (key.includes(".")) {
+			const lastDotIndex = key.lastIndexOf(".");
+			const keyFieldName = key.slice(lastDotIndex + 1);
+			if (keyFieldName === fieldName) {
+				return blockMap[key];
+			}
+		}
+	}
+	return blockMap[fieldName];
+};
+
+//カスタムフィールドを検索する関数
+const searchFieldObjects = (obj, fieldKey) => {
+	let result = null;
+
+	for (const key in obj) {
+		if (key === fieldKey) {
+			result = obj[key];
+			break;
+		} else if (typeof obj[key] === "object") {
+			const nestedResult = searchFieldObjects(obj[key], fieldKey);
+			if (nestedResult !== null) {
+				result = nestedResult;
+				break;
+			}
+		}
+	}
+
+	return result;
+};
+
 //RestAPIで投稿データを取得する関数（Promiseを返す）
 const getEntityRecordsFromAPI = (entity, query) => {
 	const path = `/wp/v2/${entity}`;
@@ -15,9 +52,10 @@ const getEntityRecordsFromAPI = (entity, query) => {
 };
 
 //RestAPIでメディア情報を取得する関数（Promiseを返す）
-const getMediaInfoFromAPI = (mediaId) => {
+const getMediaInfoFromAPI = async (mediaId) => {
 	const path = `/wp/v2/media/${mediaId}`;
-	return apiFetch({ path: path });
+	const mediaInfo = await apiFetch({ path });
+	return mediaInfo;
 };
 
 const getSelectedTaxonomyTerms = (choiceTerms, taxRelateType) => {
@@ -50,7 +88,7 @@ const getSelectedTaxonomyTerms = (choiceTerms, taxRelateType) => {
 	};
 };
 
-const ModifyFieldElement = (element, post) => {
+const ModifyFieldElement = (element, post, blockMap) => {
 	// newPostUnitのすべての子要素を取得
 	const allElements = element.getElementsByTagName("*");
 
@@ -74,47 +112,73 @@ const ModifyFieldElement = (element, post) => {
 			// field_を除いたクラス名を取得
 			const fieldName = fieldClassName.replace("field_", "");
 			// postオブジェクト内で、そのクラス名をキーとする値を取得
-			const fieldValue = post[fieldName];
+
+			//カスタムフィールドの値取得
+			const costumFieldValue = searchFieldObjects(
+				{ ...post.acf, ...post.meta },
+				fieldName,
+			);
+			//ビルトインのフィールド名があればその値をとり、なければカスタムフィールドの値をとる
+			const fieldValue = post[fieldName] || costumFieldValue;
+			//フィールドとブロックの対応マップからブロック名を抽出
+			const blockName = getBlockMapValue(blockMap, fieldName);
 			//フィールドの種類によって書き換え方が変わる
-			switch (fieldName) {
-				case "title":
+			switch (blockName) {
+				case "itmar/design-title":
 					const hElement = element.querySelector("h1, h2, h3, h4, h5, h6");
 					if (hElement) {
 						// h要素内のdivを探す
 						const divElement = hElement.querySelector("div");
-
+						console.log(fieldValue);
 						if (divElement) {
 							// divのテキストノードを書き換える
-							divElement.textContent = fieldValue.rendered;
+							if (fieldName === "date") {
+								divElement.textContent = dateI18n("Y.n.j", fieldValue);
+							} else if (fieldName === "title") {
+								divElement.textContent = fieldValue.rendered;
+							} else {
+								divElement.textContent = fieldValue;
+							}
 						}
 					}
 					break;
-				case "date":
-					const dElement = element.querySelector("h1, h2, h3, h4, h5, h6");
-					if (dElement) {
-						// h要素内のdivを探す
-						const divElement = dElement.querySelector("div");
 
-						if (divElement) {
-							// divのテキストノードを書き換える
-							divElement.textContent = dateI18n("Y.n.j", fieldValue);
-						}
-					}
-					break;
-				case "excerpt":
+				case "core/paragraph":
 					// pの内容を書き換える
 					element.innerHTML = fieldValue.rendered;
 					break;
-				case "featured_media":
+				case "core/image":
+					if (!fieldValue) break; //mediaIDがセットされていなければ終了
 					const iElement = element.querySelector("img");
 					if (iElement) {
-						getMediaInfoFromAPI(fieldValue)
-							.then((data) => {
-								// imgのsrc属性を書き換える
-								const mediaUrl = data.media_details.sizes.medium.source_url;
-								iElement.src = mediaUrl;
-							})
-							.catch((error) => console.error(error));
+						promises.push(
+							getMediaInfoFromAPI(fieldValue)
+								.then((data) => {
+									// 必要なデータを抽出
+									const newSrc = data.source_url;
+									const newSrcset = Object.entries(data.media_details.sizes)
+										.map(([name, size]) => `${size.source_url} ${size.width}w`)
+										.join(", ");
+									const newWidth = data.media_details.width;
+									const newHeight = data.media_details.height;
+									const newAlt = data.alt_text;
+									// 現在のmediaIdを取得
+									const currentMediaId = iElement.classList
+										.toString()
+										.match(/wp-image-(\d+)/)[1];
+
+									// img要素の属性を更新
+									iElement.src = newSrc;
+									iElement.srcset = newSrcset;
+									iElement.width = newWidth;
+									iElement.height = newHeight;
+									iElement.alt = newAlt;
+									// クラス名を更新
+									iElement.classList.remove(`wp-image-${currentMediaId}`);
+									iElement.classList.add(`wp-image-${fieldValue}`);
+								})
+								.catch((error) => console.error(error)),
+						);
 					}
 					break;
 			}
@@ -134,6 +198,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		const selectedRest = pickup.dataset.selected_rest;
 		const taxRelateType = pickup.dataset.tax_relate_type;
 		const choiceTerms = JSON.parse(pickup.dataset.choice_terms);
+		const blockMap = JSON.parse(pickup.dataset.block_map);
 		//タームのセレクトオブジェクト
 		const selectTerms = getSelectedTaxonomyTerms(choiceTerms, taxRelateType);
 		//RestAPIで結果を取得
@@ -144,14 +209,23 @@ document.addEventListener("DOMContentLoaded", () => {
 			.then((data) => {
 				const postUnits = pickup.querySelectorAll(".post_unit")[0];
 				if (!postUnits) return; //post_unitクラスの要素がなければリターン
-				const postDivs = postUnits.children;
 
-				data.forEach((post, index) => {
-					//非表示のクラスを外す
-					postUnits.classList.remove("unit_hide");
+				const postDivs = postUnits.children;
+				const divElements = Array.from(postDivs);
+				divElements.forEach((divs, index) => {
 					//レンダリング指定のあるフィールドの内容をpostの内容によって書き換え
-					ModifyFieldElement(postDivs[index], post);
+					ModifyFieldElement(divs, data[index], blockMap);
 				});
+				// すべてのプロミスが完了したら非表示のクラスを外す
+				Promise.all(promises)
+					.then(() => {
+						const postUnits = document.querySelectorAll(".post_unit");
+						postUnits.forEach((unit) => {
+							//非表示のクラスを外す
+							unit.classList.remove("unit_hide");
+						});
+					})
+					.catch((error) => console.error(error));
 			})
 			.catch((error) => console.error(error));
 	});

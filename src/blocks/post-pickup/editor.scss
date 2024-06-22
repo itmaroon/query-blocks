@@ -4,9 +4,21 @@
  * Replace them with your own styles or remove the file completely.
  */
 .itmar_post_blocks_pannel {
-	.components-query-controls {
+	.components-query-controls,.components-range-control {
 		width: 100%;
 	}
+}
+
+.itmar_post_block_notice{
+	.components-notice{
+		&:not(:first-child){
+			margin-top: 10px;
+		}
+	}
+	.components-notice__content{
+		margin-right: 5px;
+	}
+	
 }
 
 .wp-block-itmar-pickup-posts {
