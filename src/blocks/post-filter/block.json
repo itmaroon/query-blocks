@@ -1,0 +1,27 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 2,
+	"name": "itmar/post-filter",
+	"version": "0.1.0",
+	"title": "Post Filter",
+	"category": "design",
+	"supports": {
+		"html": false
+	},
+	"attributes": {
+		"selectedBlockId":{
+			"type":"string",
+			"default":""
+		},
+		"setFilters":{
+			"type":"array",
+			"default":["category","tag","date"]
+		}
+	},
+	
+	"textdomain": "post-blocks",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}

@@ -1,8 +1,12 @@
 import apiFetch from "@wordpress/api-fetch";
+import { __ } from "@wordpress/i18n";
 import {
 	dateI18n, // 日付をフォーマットし、サイトのロケールに変換
 	format, // 日付のフォーマット
 } from "@wordpress/date";
+import { StyleComp as StyleGroup } from "../../block-collections/src/blocks/design-group/StyleGroup";
+import { StyleComp as StyleButton } from "../../block-collections/src/blocks/design-button/StyleButton";
+import { createRoot } from "react-dom/client";
 
 // プロミスを格納する配列
 const promises = [];
@@ -121,15 +125,17 @@ const ModifyFieldElement = (element, post, blockMap) => {
 			//ビルトインのフィールド名があればその値をとり、なければカスタムフィールドの値をとる
 			const fieldValue = post[fieldName] || costumFieldValue;
 			//フィールドとブロックの対応マップからブロック名を抽出
+
 			const blockName = getBlockMapValue(blockMap, fieldName);
+
 			//フィールドの種類によって書き換え方が変わる
 			switch (blockName) {
 				case "itmar/design-title":
 					const hElement = element.querySelector("h1, h2, h3, h4, h5, h6");
+
 					if (hElement) {
 						// h要素内のdivを探す
 						const divElement = hElement.querySelector("div");
-						console.log(fieldValue);
 						if (divElement) {
 							// divのテキストノードを書き換える
 							if (fieldName === "date") {
@@ -148,9 +154,24 @@ const ModifyFieldElement = (element, post, blockMap) => {
 					element.innerHTML = fieldValue.rendered;
 					break;
 				case "core/image":
-					if (!fieldValue) break; //mediaIDがセットされていなければ終了
 					const iElement = element.querySelector("img");
+					// 現在のmediaIdを取得
+					const currentMediaId = iElement.classList
+						.toString()
+						.match(/wp-image-(\d+)/)[1];
+
 					if (iElement) {
+						if (!fieldValue) {
+							//mediaIDがセットされていなければノーイメージ画像を設定して終了
+							iElement.classList.remove(`wp-image-${currentMediaId}`);
+							iElement.classList.add("wp-image-000");
+							iElement.removeAttribute("srcset");
+							iElement.style.objectFit = "contain";
+							iElement.src = `${post_blocks.plugin_url}/assets/no-image.png`;
+							iElement.alt = __("There is no image set.", "post-blocks");
+							break;
+						}
+
 						promises.push(
 							getMediaInfoFromAPI(fieldValue)
 								.then((data) => {
@@ -162,10 +183,6 @@ const ModifyFieldElement = (element, post, blockMap) => {
 									const newWidth = data.media_details.width;
 									const newHeight = data.media_details.height;
 									const newAlt = data.alt_text;
-									// 現在のmediaIdを取得
-									const currentMediaId = iElement.classList
-										.toString()
-										.match(/wp-image-(\d+)/)[1];
 
 									// img要素の属性を更新
 									iElement.src = newSrc;
@@ -177,7 +194,17 @@ const ModifyFieldElement = (element, post, blockMap) => {
 									iElement.classList.remove(`wp-image-${currentMediaId}`);
 									iElement.classList.add(`wp-image-${fieldValue}`);
 								})
-								.catch((error) => console.error(error)),
+								.catch((error) => {
+									//画像が見つからない場合の処理
+									if (error.data.status == 404) {
+										iElement.classList.remove(`wp-image-${currentMediaId}`);
+										iElement.classList.add("wp-image-000");
+										iElement.removeAttribute("srcset");
+										iElement.style.objectFit = "contain";
+										iElement.src = `${post_blocks.plugin_url}/assets/no-image.png`;
+										iElement.alt = __("There is no image set.", "post-blocks");
+									}
+								}),
 						);
 					}
 					break;
@@ -186,7 +213,200 @@ const ModifyFieldElement = (element, post, blockMap) => {
 	}
 };
 
+const pageChange = (pickup, currentPage) => {
+	const pickupId = pickup.dataset.pickup_id;
+	const numberOfItems = pickup.dataset.number_of_items;
+	const selectedRest = pickup.dataset.selected_rest;
+	const taxRelateType = pickup.dataset.tax_relate_type;
+	const choiceTerms = JSON.parse(pickup.dataset.choice_terms);
+	const blockMap = JSON.parse(pickup.dataset.block_map);
+	//タームのセレクトオブジェクト
+	const selectTerms = getSelectedTaxonomyTerms(choiceTerms, taxRelateType);
+
+	//RestAPIで結果を取得
+	getEntityRecordsFromAPI(selectedRest, {
+		per_page: numberOfItems,
+		page: currentPage + 1,
+		_embed: true,
+		...selectTerms,
+	})
+		.then((data) => {
+			const postUnits = pickup.querySelectorAll(".post_unit")[0];
+			if (!postUnits) return; //post_unitクラスの要素がなければリターン
+
+			const postDivs = postUnits.children;
+			const divElements = Array.from(postDivs);
+			divElements.forEach((divs, index) => {
+				if (!data[index]) {
+					divs.style.display = "none"; // 要素を非表示にする
+				} else {
+					//レンダリング指定のあるフィールドの内容をpostの内容によって書き換え
+					ModifyFieldElement(divs, data[index], blockMap);
+					divs.style.display = "block"; // 要素を再表示する
+				}
+			});
+			// すべてのプロミスが完了したら非表示のクラスを外す
+			Promise.all(promises)
+				.then(() => {
+					const postUnits = document.querySelectorAll(".post_unit");
+					postUnits.forEach((unit) => {
+						//非表示のクラスを外す
+						unit.classList.remove("unit_hide");
+					});
+				})
+				.catch((error) => console.error(error));
+		})
+		.catch((error) => console.error(error));
+	//ページネーションのレンダリング
+	const pagenationRoot = document.getElementById(`page_${pickupId}`);
+
+	if (pagenationRoot && blockAttributes.groupBlockAttributes) {
+		const pagention = createRoot(pagenationRoot); //ページネーションのルート要素
+
+		//RestAPIで投稿の総数を取得
+		getEntityRecordsFromAPI(selectedRest, {
+			per_page: -1,
+			...selectTerms,
+		})
+			.then((data) => {
+				//トータルのページ数を算出
+				const totalPages = Math.ceil(data.length / numberOfItems);
+
+				//totalPagesが２ページ以上
+				if (totalPages > 1) {
+					//ダミーボタンフラグ
+					let isDummy = false;
+					//ページネーションボタンの生成
+					const pagenationButtons = (count) => {
+						//カレントページを軸にページ番号ボタンを生成
+						let forwardNum =
+							currentPage -
+							(Math.ceil((pagenationRoot.dataset.disp_items - 2) / 2) - 1);
+						let backNum =
+							currentPage +
+							(Math.ceil((pagenationRoot.dataset.disp_items - 2) / 2) - 1);
+						if (pagenationRoot.dataset.disp_items % 2 == 0) {
+							//偶数の時は後ろに幅を持たせる
+							backNum++;
+						}
+
+						if (forwardNum <= 0) {
+							//0ページより前ならbackNumに回す
+							backNum += forwardNum * -1 + 1;
+							forwardNum = 1;
+						}
+						if (backNum >= totalPages - 1) {
+							//トータルページのページ数を超えたら超えた分をforwardNumに回す
+							forwardNum -= backNum - totalPages + 2;
+							backNum = totalPages - 2;
+						}
+						console.log(currentPage, forwardNum, backNum);
+						return [...Array(count).keys()].map((index) => {
+							//最初と最後およびカレントページ番号の前後で表示数の範囲は番号ボタン
+							if (
+								index === 0 ||
+								index === count - 1 ||
+								(index >= forwardNum && index <= backNum)
+							) {
+								isDummy = false; //ダミーボタンフラグを下げる
+								return (
+									<StyleButton
+										key={index}
+										attributes={blockAttributes.numBlockAttributes}
+									>
+										<button
+											onClick={() => {
+												pageChange(pickup, index);
+											}}
+											disabled={index == currentPage}
+										>
+											<div>{index + 1}</div>
+										</button>
+									</StyleButton>
+								);
+							} else {
+								//それ以外はダミーボタン
+								if (!isDummy) {
+									//ダミーボタンは連続して表示させない
+									isDummy = true;
+									return (
+										<StyleButton
+											key={index}
+											attributes={blockAttributes.dummyBlockAttributes}
+										>
+											<button disabled={true}>
+												<div>...</div>
+											</button>
+										</StyleButton>
+									);
+								}
+							}
+						});
+					};
+					pagention.render(
+						<StyleGroup attributes={blockAttributes.groupBlockAttributes}>
+							<div class="wp-block-itmar-design-group">
+								<div
+									className={`group_contents ${
+										blockAttributes.groupBlockAttributes.is_anime
+											? "fadeTrigger"
+											: ""
+									}`}
+									data-is_anime={blockAttributes.groupBlockAttributes.is_anime}
+									data-anime_prm={JSON.stringify(
+										blockAttributes.groupBlockAttributes.anime_prm,
+									)}
+								>
+									{pagenationRoot.dataset.is_arrow && (
+										<StyleButton
+											attributes={blockAttributes.backBlockAttributes}
+										>
+											<button
+												onClick={() => {
+													if (currentPage > 0) {
+														currentPage--;
+														pageChange(pickup, currentPage);
+													}
+												}}
+											>
+												<div></div>
+											</button>
+										</StyleButton>
+									)}
+
+									<React.Fragment>
+										{pagenationButtons(totalPages)}
+									</React.Fragment>
+
+									{pagenationRoot.dataset.is_arrow && (
+										<StyleButton
+											attributes={blockAttributes.forwardBlockAttributes}
+										>
+											<button
+												onClick={() => {
+													if (currentPage < totalPages - 1) {
+														currentPage++;
+														pageChange(pickup, currentPage);
+													}
+												}}
+											>
+												<div></div>
+											</button>
+										</StyleButton>
+									)}
+								</div>
+							</div>
+						</StyleGroup>,
+					);
+				}
+			})
+			.catch((error) => console.error(error));
+	}
+};
+
 document.addEventListener("DOMContentLoaded", () => {
+	let currentPage = 0;
+
 	//PickUp Postの親要素を取得
 	const pickupElement = document.querySelectorAll(
 		".wp-block-itmar-pickup-posts",
@@ -194,39 +414,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	//エディタで設定された属性をdatasetで受け取ってクエリーの結果を取得
 	pickupElement.forEach((pickup) => {
-		const numberOfItems = pickup.dataset.number_of_items;
-		const selectedRest = pickup.dataset.selected_rest;
-		const taxRelateType = pickup.dataset.tax_relate_type;
-		const choiceTerms = JSON.parse(pickup.dataset.choice_terms);
-		const blockMap = JSON.parse(pickup.dataset.block_map);
-		//タームのセレクトオブジェクト
-		const selectTerms = getSelectedTaxonomyTerms(choiceTerms, taxRelateType);
-		//RestAPIで結果を取得
-		getEntityRecordsFromAPI(selectedRest, {
-			per_page: numberOfItems,
-			...selectTerms,
-		})
-			.then((data) => {
-				const postUnits = pickup.querySelectorAll(".post_unit")[0];
-				if (!postUnits) return; //post_unitクラスの要素がなければリターン
-
-				const postDivs = postUnits.children;
-				const divElements = Array.from(postDivs);
-				divElements.forEach((divs, index) => {
-					//レンダリング指定のあるフィールドの内容をpostの内容によって書き換え
-					ModifyFieldElement(divs, data[index], blockMap);
-				});
-				// すべてのプロミスが完了したら非表示のクラスを外す
-				Promise.all(promises)
-					.then(() => {
-						const postUnits = document.querySelectorAll(".post_unit");
-						postUnits.forEach((unit) => {
-							//非表示のクラスを外す
-							unit.classList.remove("unit_hide");
-						});
-					})
-					.catch((error) => console.error(error));
-			})
-			.catch((error) => console.error(error));
+		pageChange(pickup, currentPage);
 	});
 });

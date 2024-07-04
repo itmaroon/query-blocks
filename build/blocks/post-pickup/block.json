@@ -9,9 +9,21 @@
     "html": false
   },
   "attributes": {
+    "pickupId": {
+      "type": "string",
+      "default": "Default_ID"
+    },
     "numberOfItems": {
       "type": "number",
       "default": 3
+    },
+    "numberOfTotal": {
+      "type": "number",
+      "default": 0
+    },
+    "currentPage": {
+      "type": "number",
+      "default": 0
     },
     "selectedSlug": {
       "type": "string",

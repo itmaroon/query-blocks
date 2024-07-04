@@ -21,6 +21,7 @@ import {
 	RadioControl,
 	Notice,
 	RangeControl,
+	TextControl,
 } from "@wordpress/components";
 import { useEffect, useState } from "@wordpress/element";
 import { createBlock } from "@wordpress/blocks";
@@ -305,12 +306,15 @@ const searchFieldObjects = (obj, fieldKey) => {
 
 export default function Edit({ attributes, setAttributes, clientId }) {
 	const {
+		pickupId,
 		selectedSlug,
 		selectedRest,
 		choiceTerms,
 		taxRelateType,
 		choiceFields,
 		numberOfItems,
+		numberOfTotal,
+		currentPage,
 		blockMap,
 		blocksAttributesArray,
 	} = attributes;
@@ -350,10 +354,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	};
 
 	//RestAPIでpostを取得する
-	const [currentPage, setCurrentPage] = useState(1);
-
 	const [posts, setPosts] = useState([]);
-	const [totalPages, setTotalPages] = useState(0);
 
 	useEffect(() => {
 		const fetchPosts = async () => {
@@ -361,7 +362,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				const taxonomyTerms = getSelectedTaxonomyTerms();
 				const query = {
 					per_page: numberOfItems,
-					page: currentPage,
+					page: currentPage + 1,
 					_embed: true,
 					...taxonomyTerms,
 				};
@@ -386,7 +387,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				});
 
 				setPosts(postsResponse);
-				setTotalPages(Math.ceil(totalPostsResponse.length / numberOfItems));
+				setAttributes({ numberOfTotal: totalPostsResponse.length });
 			} catch (error) {
 				console.log(error);
 			}
@@ -512,7 +513,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 
 							break;
 						case "core/paragraph":
-							console.log(costumFieldValue);
 							blockAttributes = {
 								className: `itmar_ex_block field_${element_field}`,
 								content: costumFieldValue,
@@ -574,6 +574,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				addBlockobject,
 				choiceFields,
 			);
+
 			//filteredBlockObjectからreplaceInnerBlocks用のブロックオブジェクトを生成し、インナーブロックをレンダリング
 			const blocksObj = createBlocksFromObject(filteredBlockObject); //Promiseで返ってくる
 
@@ -645,6 +646,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					regularFields[fieldObj.fieldName] = fieldObj.fieldValue;
 				}
 			});
+
 			//RestAPIのエンドポイントを生成
 			const path = `/wp/v2/${selectedRest}/${unitAttribute.attributes.blockNum}`;
 			// リクエストオプション
@@ -725,6 +727,11 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		<>
 			<InspectorControls group="settings">
 				<PanelBody title={__("Content Settings", "post-blocks")}>
+					<TextControl
+						label={__("Pickup ID", "post-blocks")}
+						value={pickupId}
+						onChange={(value) => setAttributes({ pickupId: value })}
+					/>
 					<ArchiveSelectControl
 						selectedSlug={selectedSlug}
 						label={__("Select Post Type", "post-blocks")}
@@ -769,9 +776,25 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 							choiceItems={choiceFields}
 							blockMap={blockMap}
 							textDomain="post-blocks"
-							onChange={(newChoiceFields) =>
-								setAttributes({ choiceFields: newChoiceFields })
-							}
+							onChange={(newChoiceFields) => {
+								//選択されたフィールド名の配列を登録
+								setAttributes({ choiceFields: newChoiceFields });
+								// プレフィックスを除去した新しい配列を作成
+								const processedFields = newChoiceFields.map((field) =>
+									field.replace(/^(meta_|acf_)/, ""),
+								);
+								// 選択されたフィールド名に基づく新しいblockMapオブジェクトを生成
+								const newBlockMap = processedFields.reduce((acc, field) => {
+									if (field in blockMap) {
+										acc[field] = blockMap[field];
+									} else {
+										acc[field] = "itmar/design-title";
+									}
+									return acc;
+								}, {});
+
+								setAttributes({ blockMap: newBlockMap });
+							}}
 							onBlockMapChange={(newBlockMap) =>
 								setAttributes({ blockMap: newBlockMap })
 							}
@@ -837,19 +860,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				<div className="edit_area">
 					<div {...innerBlocksProps} />
 				</div>
-				{totalPages > 1 && (
-					<div>
-						{Array.from({ length: totalPages }, (_, index) => (
-							<button
-								key={index}
-								onClick={() => setCurrentPage(index + 1)}
-								disabled={currentPage === index + 1}
-							>
-								{index + 1}
-							</button>
-						))}
-					</div>
-				)}
 			</div>
 		</>
 	);

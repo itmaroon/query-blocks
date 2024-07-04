@@ -1,0 +1,55 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 2,
+	"name": "itmar/post-pagenation",
+	"version": "0.1.0",
+	"title": "Post Pagenation",
+	"category": "design",
+	"supports": {
+		"html": false
+	},
+	"attributes": {
+		"dispOfItems": {
+			"type": "number",
+			"default": 3
+		},
+		"isArrowButton": {
+			"type": "boolean",
+			"default": true
+		},
+		"currentPage": {
+			"type": "number",
+			"default": 0
+		},
+		"selectedBlockId":{
+			"type":"string",
+			"default":""
+		},
+		"groupBlockAttributes":{
+			"type":"object",
+			"default":null
+		},
+		"numBlockAttributes":{
+			"type":"object",
+			"default":null
+		},
+		"dummyBlockAttributes":{
+			"type":"object",
+			"default":null
+		},
+		"forwardBlockAttributes":{
+			"type":"object",
+			"default":null
+		},
+		"backBlockAttributes":{
+			"type":"object",
+			"default":null
+		}
+	},
+	
+	"textdomain": "post-blocks",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}

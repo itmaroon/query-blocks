@@ -1,11 +1,18 @@
 import { useBlockProps, InnerBlocks } from "@wordpress/block-editor";
 
 export default function save({ attributes }) {
-	const { numberOfItems, selectedRest, taxRelateType, choiceTerms, blockMap } =
-		attributes;
+	const {
+		pickupId,
+		numberOfItems,
+		selectedRest,
+		taxRelateType,
+		choiceTerms,
+		blockMap,
+	} = attributes;
 	return (
 		<div
 			{...useBlockProps.save()}
+			data-pickup_id={pickupId}
 			data-number_of_items={numberOfItems}
 			data-selected_rest={selectedRest}
 			data-tax_relate_type={taxRelateType}
