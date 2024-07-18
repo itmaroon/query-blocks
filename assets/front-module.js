@@ -4,9 +4,11 @@ import {
 	dateI18n, // 日付をフォーマットし、サイトのロケールに変換
 	format, // 日付のフォーマット
 } from "@wordpress/date";
+
 import { StyleComp as StyleGroup } from "../../block-collections/src/blocks/design-group/StyleGroup";
 import { StyleComp as StyleButton } from "../../block-collections/src/blocks/design-button/StyleButton";
 import { createRoot } from "react-dom/client";
+import { restTaxonomies } from "itmar-block-packages";
 
 // プロミスを格納する配列
 const promises = [];
@@ -213,6 +215,7 @@ const ModifyFieldElement = (element, post, blockMap) => {
 	}
 };
 
+//ページネーションの処理
 const pageChange = (pickup, currentPage) => {
 	const pickupId = pickup.dataset.pickup_id;
 	const numberOfItems = pickup.dataset.number_of_items;
@@ -260,7 +263,7 @@ const pageChange = (pickup, currentPage) => {
 	//ページネーションのレンダリング
 	const pagenationRoot = document.getElementById(`page_${pickupId}`);
 
-	if (pagenationRoot && blockAttributes.groupBlockAttributes) {
+	if (pagenationRoot && pagenationRoot.dataset.group_attributes) {
 		const pagention = createRoot(pagenationRoot); //ページネーションのルート要素
 
 		//RestAPIで投稿の総数を取得
@@ -300,7 +303,6 @@ const pageChange = (pickup, currentPage) => {
 							forwardNum -= backNum - totalPages + 2;
 							backNum = totalPages - 2;
 						}
-						console.log(currentPage, forwardNum, backNum);
 						return [...Array(count).keys()].map((index) => {
 							//最初と最後およびカレントページ番号の前後で表示数の範囲は番号ボタン
 							if (
@@ -312,7 +314,9 @@ const pageChange = (pickup, currentPage) => {
 								return (
 									<StyleButton
 										key={index}
-										attributes={blockAttributes.numBlockAttributes}
+										attributes={JSON.parse(
+											pagenationRoot.dataset.num_attributes,
+										)}
 									>
 										<button
 											onClick={() => {
@@ -332,7 +336,9 @@ const pageChange = (pickup, currentPage) => {
 									return (
 										<StyleButton
 											key={index}
-											attributes={blockAttributes.dummyBlockAttributes}
+											attributes={JSON.parse(
+												pagenationRoot.dataset.dummy_attributes,
+											)}
 										>
 											<button disabled={true}>
 												<div>...</div>
@@ -343,23 +349,26 @@ const pageChange = (pickup, currentPage) => {
 							}
 						});
 					};
+
 					pagention.render(
-						<StyleGroup attributes={blockAttributes.groupBlockAttributes}>
+						<StyleGroup
+							attributes={JSON.parse(pagenationRoot.dataset.group_attributes)}
+						>
 							<div class="wp-block-itmar-design-group">
 								<div
 									className={`group_contents ${
-										blockAttributes.groupBlockAttributes.is_anime
-											? "fadeTrigger"
-											: ""
+										pagenationRoot.dataset.is_anime ? "fadeTrigger" : ""
 									}`}
-									data-is_anime={blockAttributes.groupBlockAttributes.is_anime}
+									data-is_anime={pagenationRoot.dataset.is_anime}
 									data-anime_prm={JSON.stringify(
-										blockAttributes.groupBlockAttributes.anime_prm,
+										pagenationRoot.dataset.anime_prm,
 									)}
 								>
 									{pagenationRoot.dataset.is_arrow && (
 										<StyleButton
-											attributes={blockAttributes.backBlockAttributes}
+											attributes={JSON.parse(
+												pagenationRoot.dataset.back_attributes,
+											)}
 										>
 											<button
 												onClick={() => {
@@ -380,7 +389,9 @@ const pageChange = (pickup, currentPage) => {
 
 									{pagenationRoot.dataset.is_arrow && (
 										<StyleButton
-											attributes={blockAttributes.forwardBlockAttributes}
+											attributes={JSON.parse(
+												pagenationRoot.dataset.forward_attributes,
+											)}
 										>
 											<button
 												onClick={() => {
@@ -398,22 +409,124 @@ const pageChange = (pickup, currentPage) => {
 							</div>
 						</StyleGroup>,
 					);
+				} else {
+					//ページネーションを消去
+					pagention.render(
+						<StyleGroup
+							attributes={JSON.parse(pagenationRoot.dataset.group_attributes)}
+						/>,
+					);
 				}
 			})
 			.catch((error) => console.error(error));
 	}
 };
 
+//documentの読み込み後に処理
 document.addEventListener("DOMContentLoaded", () => {
-	let currentPage = 0;
-
 	//PickUp Postの親要素を取得
 	const pickupElement = document.querySelectorAll(
 		".wp-block-itmar-pickup-posts",
 	);
 
-	//エディタで設定された属性をdatasetで受け取ってクエリーの結果を取得
+	//pickupに応じてページネーションの操作によるページを表示
 	pickupElement.forEach((pickup) => {
-		pageChange(pickup, currentPage);
+		//１ページ目を表示
+		pageChange(pickup, 0);
 	});
+	//フィルタ設定用のブロックを取得
+	const filterContainer = document.querySelector(".wp-block-itmar-post-filter");
+	const filterId = filterContainer?.dataset.selected_id; //フィルタブロックに設定されたピックアップブロックのID
+
+	const pickup = Array.from(pickupElement).find(
+		(element) => element.getAttribute("data-pickup_id") === filterId,
+	); //フィルタ設定ブロックに対応するピックアップブロック
+	const pickupSlug = pickup?.dataset.selected_slug; //picupブロックから投稿タイプのスラッグを取得
+
+	if (filterContainer) {
+		//データベース上のタクソノミーとタームの設定を確認
+		restTaxonomies(pickupSlug)
+			.then((response) => {
+				const taxArray = response.map((res) => {
+					return {
+						value: res.slug,
+						label: res.name,
+						terms: res.terms,
+					};
+				});
+				//インナーブロック内のチェックボックスを抽出
+				const checkboxes = filterContainer.querySelectorAll(
+					'.itmar_filter_checkbox input[type="checkbox"]',
+				);
+				// taxArrayからすべてのterm nameを抽出
+				const allTermNames = taxArray.flatMap((tax) =>
+					tax.terms.map((term) => term.slug),
+				);
+
+				// checkboxesを配列に変換し、各要素をチェック
+				Array.from(checkboxes).forEach((checkbox) => {
+					const checkboxName = checkbox.getAttribute("name");
+
+					// checkboxのname属性がallTermNamesに含まれていない場合、要素を削除
+					if (!allTermNames.includes(checkboxName)) {
+						const filterCheckboxElement = checkbox.closest(
+							".itmar_filter_checkbox",
+						);
+						if (filterCheckboxElement && filterCheckboxElement.parentElement) {
+							filterCheckboxElement.parentElement.remove();
+						}
+					}
+				});
+				//post-filterブロック内のitmar_filter_checkboxのチェックボックスを監視するリスナー
+				checkboxes.forEach((checkbox) => {
+					checkbox.addEventListener("change", function () {
+						const checkedArray = Array.from(checkboxes)
+							.filter((checkbox) => checkbox.checked)
+							.map((checkbox) => {
+								//チェックボックスが含まれるグループからクラス名を抽出（それがタクソノミー）
+								const parentGroup = checkbox.closest(
+									".wp-block-itmar-design-group",
+								);
+								if (parentGroup) {
+									const classes = Array.from(parentGroup.classList);
+									const taxonomy = classes.find(
+										//wp-block-itmar-design-groupでないクラス名
+										(cls) => cls !== "wp-block-itmar-design-group",
+									);
+									if (taxonomy) {
+										// taxArrayから一致する要素を探す
+										const matchingTax = taxArray.find(
+											(tax) => tax.value === taxonomy,
+										);
+										if (matchingTax) {
+											// termsから一致するslugを持つ要素を探す
+											const matchingTerm = matchingTax.terms.find(
+												(term) => term.slug === checkbox.name, //input要素のname属性がタームのスラッグ
+											);
+											if (matchingTerm) {
+												return {
+													taxonomy: taxonomy,
+													term: {
+														id: matchingTerm.id,
+														slug: matchingTerm.slug,
+													},
+												};
+											}
+										}
+									}
+								}
+								return null;
+							})
+							.filter((item) => item !== null);
+						//チェックされたタームを新しい選択項目としてデータセット
+						pickup.dataset.choice_terms = JSON.stringify(checkedArray);
+
+						pageChange(pickup, 0); //表示ページの変更
+					});
+				});
+			})
+			.catch((error) => {
+				console.error("投稿の更新に失敗しました", error);
+			});
+	}
 });

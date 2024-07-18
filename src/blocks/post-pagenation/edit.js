@@ -198,6 +198,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			if (pickup) {
 				setSelectedPostTotal(pickup.attributes.numberOfTotal);
 				setSelectedDispNum(pickup.attributes.numberOfItems);
+				setCurrentPage(pickup.attributes.currentPage);
 			}
 		}
 	}, [pickup]); //ターゲットのpickup-blockが更新された
@@ -330,6 +331,10 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				//インナーブロックを配置
 				const newInnerBlocks = [pagenationBlock];
 				replaceInnerBlocks(clientId, newInnerBlocks, false);
+			} else {
+				//２ページ以下の時は空のグループブロックを表示
+				const emptyBlock = createBlock("itmar/design-group", {}, []);
+				replaceInnerBlocks(clientId, emptyBlock, false);
 			}
 		}
 	}, [
@@ -359,7 +364,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 							})),
 						]}
 						onChange={(changeOption) => {
-							console.log(changeOption);
 							setAttributes({ selectedBlockId: changeOption });
 						}}
 					/>

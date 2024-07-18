@@ -6,7 +6,8 @@
 	"title": "Post Filter",
 	"category": "design",
 	"supports": {
-		"html": false
+		"html": false,
+		"multiple": false
 	},
 	"attributes": {
 		"selectedBlockId":{
@@ -15,13 +16,48 @@
 		},
 		"setFilters":{
 			"type":"array",
-			"default":["category","tag","date"]
+			"default":["search","date"]
+		},
+		"taxRelate":{
+			"type":"string",
+			"default":"or"
+		},
+		"dateKind":{
+			"type":"string",
+			"default":"month"
+		},
+		"groupBlockAttributes":{
+			"type":"object",
+			"default":{}
+		},
+		"titleAttributes":{
+			"type":"object",
+			"default":{}
+		},
+		"serachBoxAttributes":{
+			"type":"object",
+			"default":{}
+		},
+		"serachButtonAttributes":{
+			"type":"object",
+			"default":{}
+		},
+		"monthAttributes":{
+			"type":"object",
+			"default":{}
+		},
+		"yearAttributes":{
+			"type":"object",
+			"default":{}
+		},
+		"checkBoxAttributes":{
+			"type":"object",
+			"default":{}
 		}
 	},
 	
 	"textdomain": "post-blocks",
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./index.css",
-	"style": "file:./style-index.css",
-	"render": "file:./render.php"
+	"style": "file:./style-index.css"
 }

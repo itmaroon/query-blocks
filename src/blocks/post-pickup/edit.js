@@ -136,7 +136,13 @@ const createBlocksFromObject = async (blockObject) => {
 };
 
 //ブロックにクラス名が含まれるかを判定する関数
-const hasMatchingClassName = (blockObject, field, overrideAttributes) => {
+const hasMatchingClassName = (
+	blockObject,
+	field,
+	blockName,
+	overrideAttributes,
+	isChangeId,
+) => {
 	// blockObjectがundefinedまたはnullの場合はfalseを返す
 	if (!blockObject) {
 		return false;
@@ -167,8 +173,16 @@ const hasMatchingClassName = (blockObject, field, overrideAttributes) => {
 	for (const className of classNames) {
 		if (field === className) {
 			// 一致するクラス名が見つかった場合は、overrideAttributesで属性を上書き
-			Object.assign(blockObject.attributes, overrideAttributes);
+			if (blockObject.blockName === blockName) {
+				if (isChangeId) {
+					//投稿IDが変化していればレンダリング内容を変更
+					Object.assign(blockObject.attributes, overrideAttributes);
+				}
+			} else {
+				blockObject.attributes = overrideAttributes; //blockNameが変わった時はすべての属性を入れ替え
+			}
 
+			blockObject.blockName = blockName;
 			return true;
 		}
 	}
@@ -176,7 +190,13 @@ const hasMatchingClassName = (blockObject, field, overrideAttributes) => {
 	// hasMatchがfalseで、innerBlocksが存在する場合は、再帰的に探索
 	if (blockObject.innerBlocks && blockObject.innerBlocks.length > 0) {
 		return blockObject.innerBlocks.some((innerBlock) =>
-			hasMatchingClassName(innerBlock, field, overrideAttributes),
+			hasMatchingClassName(
+				innerBlock,
+				field,
+				blockName,
+				overrideAttributes,
+				isChangeId,
+			),
 		);
 	}
 
@@ -304,6 +324,52 @@ const searchFieldObjects = (obj, fieldKey) => {
 	return result;
 };
 
+//コピーした属性にブロックエディタ上の投稿内容を維持してマージする関数
+const mergeBlocks = (fieldArray, changeBlock) => {
+	if (!changeBlock) return null;
+
+	const { blockName, attributes, innerBlocks } = changeBlock;
+	// attributes の処理
+	const processedAttributes = { ...attributes };
+
+	// className の確認とfield_以降の文字列の抽出
+	const fieldClass =
+		processedAttributes.className &&
+		typeof processedAttributes.className === "string" &&
+		processedAttributes.className
+			.split(" ")
+			.find((cls) => cls.startsWith("field_"));
+
+	if (fieldClass) {
+		const fieldName = fieldClass.split("field_")[1];
+		const fieldValue = fieldArray.find(
+			(item) => item.fieldName === fieldName,
+		).fieldValue;
+
+		switch (blockName) {
+			case "itmar/design-title":
+				processedAttributes.headingContent = fieldValue;
+				break;
+			case "core/paragraph":
+				processedAttributes.content = fieldValue;
+				break;
+			case "core/image":
+				processedAttributes.id = fieldValue;
+				break;
+			// 他のブロックタイプに対する処理をここに追加できます
+		}
+	}
+
+	// インナーブロックを再帰的に生成
+	const newInnerBlocks = Array.isArray(innerBlocks)
+		? innerBlocks
+				.map((innerBlock) => mergeBlocks(fieldArray, innerBlock))
+				.filter(Boolean)
+		: [];
+	// 新しいブロックを生成して返す
+	return createBlock(blockName, processedAttributes, newInnerBlocks);
+};
+
 export default function Edit({ attributes, setAttributes, clientId }) {
 	const {
 		pickupId,
@@ -420,7 +486,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 
 	//投稿データの抽出および表示フィールド変更に基づく再レンダリング
 	useEffect(() => {
-		if (!posts || posts.length < 1) {
+		if (!posts || !Array.isArray(posts)) {
 			return; //postsが返っていなければ処理しない。
 		}
 
@@ -440,10 +506,15 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			// dispAttributeArrayの長さがpostsの長さより長い場合、余分な要素を削除する
 			dispAttributeArray.splice(postsLength);
 		}
-
+		//postsが０のときは空のグループを登録して終了
+		if (dispAttributeArray.length == 0) {
+			const emptyBlock = createBlock("itmar/design-group", {}, []);
+			replaceInnerBlocks(clientId, emptyBlock, false);
+			return;
+		}
 		//postの数分のデータを生成
 		const blocksArray = [];
-
+		let diffIdFlg = false;
 		posts.forEach((post, index) => {
 			//dispAttributeArray[index]が{}ならitmar/design-groupブロックを挿入
 			if (Object.keys(dispAttributeArray[index]).length === 0) {
@@ -452,7 +523,14 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					attributes: {},
 				});
 			}
-			//最上位のitmar/design-groupのblockNum属性にpost.idをセットする
+			//最上位のitmar/design-groupのblockNum属性にpost.idをセットする（ブロック属性と一致している場合は入れ替えずフラグを立てる）
+			if (dispAttributeArray[index].attributes.blockNum != post.id) {
+				dispAttributeArray[index].attributes.blockNum = post.id;
+				diffIdFlg = true;
+			} else {
+				diffIdFlg = false; //post.idの変更がないことを示すフラグ
+			}
+
 			dispAttributeArray[index].attributes.blockNum = post.id;
 
 			//追加するブロック
@@ -506,9 +584,13 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 
 					switch (blockname) {
 						case "itmar/design-title":
+							const setValue =
+								typeof costumFieldValue === "number"
+									? costumFieldValue.toString()
+									: costumFieldValue;
 							blockAttributes = {
 								className: `field_${element_field}`,
-								headingContent: costumFieldValue,
+								headingContent: setValue,
 							};
 
 							break;
@@ -536,7 +618,9 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				const is_field = hasMatchingClassName(
 					dispAttributeArray[index],
 					element_field,
+					blockMap[field],
 					blockAttributes,
+					diffIdFlg,
 				);
 
 				if (!is_field) {
@@ -569,6 +653,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					addBlockobject.innerBlocks.push(...addBlocks);
 				}
 			}
+
 			//選択されていないフィールドのブロックがあれば削除
 			const filteredBlockObject = removeNonMatchingClassName(
 				addBlockobject,
@@ -594,7 +679,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				// エラーハンドリング
 				console.error("ブロックの解決中にエラーが発生しました:", error);
 			});
-	}, [posts, choiceFields]);
+	}, [posts, choiceFields, blockMap]);
 
 	//スタイルがペーストされたときブロックの再レンダリングをトリガー
 	useEffect(() => {
@@ -611,9 +696,9 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		innerBlocks.forEach((unitBlock) => {
 			//ユニットごとにポストデータを記録
 			const unitAttribute = getBlockAttributes(unitBlock);
-
 			//ブロックに記入された内容を取得
 			const fieldObjs = FieldClassNameObj(unitAttribute);
+			if (!fieldObjs) return; //入力フィールドがない場合は処理しない
 
 			// カスタムフィールドとその他のフィールドを分離
 			const metaFields = {};
@@ -783,21 +868,19 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 								const processedFields = newChoiceFields.map((field) =>
 									field.replace(/^(meta_|acf_)/, ""),
 								);
-								// 選択されたフィールド名に基づく新しいblockMapオブジェクトを生成
-								const newBlockMap = processedFields.reduce((acc, field) => {
-									if (field in blockMap) {
-										acc[field] = blockMap[field];
-									} else {
-										acc[field] = "itmar/design-title";
-									}
-									return acc;
-								}, {});
 
+								// 選択されたフィールド名に基づく新しいblockMapオブジェクトを生成
+								processedFields.forEach((field) => {
+									if (!blockMap.hasOwnProperty(field)) {
+										blockMap[field] = "itmar/design-title";
+									}
+								});
+								const newBlockMap = { ...blockMap };
 								setAttributes({ blockMap: newBlockMap });
 							}}
-							onBlockMapChange={(newBlockMap) =>
-								setAttributes({ blockMap: newBlockMap })
-							}
+							onBlockMapChange={(newBlockMap) => {
+								setAttributes({ blockMap: newBlockMap });
+							}}
 						/>
 					</PanelBody>
 
@@ -832,8 +915,35 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 											const updatedBlocksAttributes = [
 												...blocksAttributesArray,
 											];
-											updatedBlocksAttributes[index] =
-												blocksAttributesArray[noticeClickedIndex];
+											//フィールド表示用のブロックからフィールド名と値を取得
+											const fieldArray = FieldClassNameObj(
+												updatedBlocksAttributes[index],
+											);
+											//新しいブロックのスタイル属性にブロックエディタ上のフィールドの値を戻す
+											const mergedBlock = mergeBlocks(
+												fieldArray,
+												blocksAttributesArray[noticeClickedIndex],
+											);
+											const mergedAttributes = getBlockAttributes(mergedBlock);
+
+											// 元のblockNumを確保
+											const { blockNum: sourceNum } =
+												blocksAttributesArray[index].attributes;
+											//新しいブロックスタイルをルートの属性とそれ以外に分離
+											const { attributes: changeAttributes, ...elseElement } =
+												mergedAttributes;
+											//ルートの属性からblockNumを分離
+											const { blockNum: changeNum, ...elseAttributes } =
+												changeAttributes;
+											// 新しいオブジェクトを生成（元のblockNumを入れる）
+											const newElement = {
+												...elseElement,
+												attributes: { blockNum: sourceNum, ...elseAttributes },
+											};
+
+											//配列の要素を入れ替える
+											updatedBlocksAttributes[index] = newElement;
+											//属性を変更
 											setAttributes({
 												blocksAttributesArray: updatedBlocksAttributes,
 											});

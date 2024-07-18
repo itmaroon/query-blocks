@@ -4,6 +4,7 @@ export default function save({ attributes }) {
 	const {
 		pickupId,
 		numberOfItems,
+		selectedSlug,
 		selectedRest,
 		taxRelateType,
 		choiceTerms,
@@ -14,6 +15,7 @@ export default function save({ attributes }) {
 			{...useBlockProps.save()}
 			data-pickup_id={pickupId}
 			data-number_of_items={numberOfItems}
+			data-selected_slug={selectedSlug}
 			data-selected_rest={selectedRest}
 			data-tax_relate_type={taxRelateType}
 			data-choice_terms={JSON.stringify(choiceTerms)}

@@ -27,29 +27,28 @@
 		},
 		"groupBlockAttributes":{
 			"type":"object",
-			"default":null
+			"default":{}
 		},
 		"numBlockAttributes":{
 			"type":"object",
-			"default":null
+			"default":{}
 		},
 		"dummyBlockAttributes":{
 			"type":"object",
-			"default":null
+			"default":{}
 		},
 		"forwardBlockAttributes":{
 			"type":"object",
-			"default":null
+			"default":{}
 		},
 		"backBlockAttributes":{
 			"type":"object",
-			"default":null
+			"default":{}
 		}
 	},
 	
 	"textdomain": "post-blocks",
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./index.css",
-	"style": "file:./style-index.css",
-	"render": "file:./render.php"
+	"style": "file:./style-index.css"
 }
