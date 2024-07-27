@@ -3,18 +3,11 @@
  *
  * Replace them with your own styles or remove the file completely.
  */
-.itmar_post_blocks_pannel .components-query-controls, .itmar_post_blocks_pannel .components-range-control {
-  width: 100%;
-}
-
-.itmar_post_block_notice .components-notice:not(:first-child) {
-  margin-top: 10px;
-}
-.itmar_post_block_notice .components-notice__content {
-  margin-right: 5px;
-}
-
-.wp-block-itmar-pickup-posts {
+.wp-block-itmar-thanks-figure-block {
   border: 1px dotted #f00;
+}
+
+.itmar_date_span .components-base-control {
+  margin-bottom: 8px;
 }
 /*# sourceMappingURL=editor.css.map */

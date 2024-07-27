@@ -205,7 +205,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 
 	//表示数と投稿数を取得したらインナーブロックにdesign-buttonを詰め込む
 	useEffect(() => {
-		if (selectedPostTotal && selectedDispNum) {
+		if (selectedPostTotal != null && selectedDispNum) {
 			//デフォルトのページボタンスタイル
 			const defaultPos = {
 				width: "3em",

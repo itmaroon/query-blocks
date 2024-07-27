@@ -45,6 +45,10 @@
 			"type": "array",
 			"default": []
 		},
+		"choicePeriod":{
+			"type":"string",
+			"default":""
+		},
 		"blockMap":{
 			"type":"object",
 			"default":{

@@ -378,6 +378,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		choiceTerms,
 		taxRelateType,
 		choiceFields,
+		choicePeriod,
 		numberOfItems,
 		numberOfTotal,
 		currentPage,
@@ -419,6 +420,38 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		};
 	};
 
+	//choicePeriod属性からクエリー用の配列を生成
+	const getPeriodQuery = (dateString) => {
+		if (!dateString) {
+			return null; //与えられた文字列が空ならnullをかえす
+		}
+		const parts = dateString.split("/");
+		const year = parseInt(parts[0], 10);
+		const month = parts.length > 1 ? parseInt(parts[1], 10) : null;
+		const day = parts.length > 2 ? parseInt(parts[2], 10) : null;
+
+		let startDate, endDate;
+
+		if (day) {
+			// 特定の日
+			startDate = new Date(year, month - 1, day, 0, 0, 0, -1);
+			endDate = new Date(year, month - 1, day, 23, 59, 59, 1000);
+		} else if (month) {
+			// 特定の月
+			startDate = new Date(year, month - 1, 1, 0, 0, 0, -1);
+			endDate = new Date(year, month, 1, 0, 0, 0, 0);
+		} else {
+			// 特定の年
+			startDate = new Date(year, 0, 1, 0, 0, 0, -1);
+			endDate = new Date(year + 1, 0, 1, 0, 0, 0, 0);
+		}
+
+		return {
+			after: startDate.toISOString(),
+			before: endDate.toISOString(),
+		};
+	};
+
 	//RestAPIでpostを取得する
 	const [posts, setPosts] = useState([]);
 
@@ -426,14 +459,18 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		const fetchPosts = async () => {
 			try {
 				const taxonomyTerms = getSelectedTaxonomyTerms();
+				const periodObj = getPeriodQuery(choicePeriod);
+				console.log(periodObj);
 				const query = {
 					per_page: numberOfItems,
 					page: currentPage + 1,
 					_embed: true,
 					...taxonomyTerms,
+					...periodObj,
 				};
 				const totalQuery = {
 					...taxonomyTerms,
+					...periodObj,
 					per_page: -1,
 				};
 
@@ -460,7 +497,14 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		};
 
 		fetchPosts();
-	}, [numberOfItems, currentPage, selectedSlug, choiceTerms, taxRelateType]);
+	}, [
+		numberOfItems,
+		currentPage,
+		selectedSlug,
+		choiceTerms,
+		taxRelateType,
+		choicePeriod,
+	]);
 
 	//インナーブロックのひな型を用意
 	const TEMPLATE = [];
