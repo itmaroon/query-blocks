@@ -30,6 +30,7 @@ import {
 	ArchiveSelectControl,
 	TermChoiceControl,
 	FieldChoiceControl,
+	getPeriodQuery,
 } from "itmar-block-packages";
 
 //スペースのリセットバリュー
@@ -420,38 +421,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		};
 	};
 
-	//choicePeriod属性からクエリー用の配列を生成
-	const getPeriodQuery = (dateString) => {
-		if (!dateString) {
-			return null; //与えられた文字列が空ならnullをかえす
-		}
-		const parts = dateString.split("/");
-		const year = parseInt(parts[0], 10);
-		const month = parts.length > 1 ? parseInt(parts[1], 10) : null;
-		const day = parts.length > 2 ? parseInt(parts[2], 10) : null;
-
-		let startDate, endDate;
-
-		if (day) {
-			// 特定の日
-			startDate = new Date(year, month - 1, day, 0, 0, 0, -1);
-			endDate = new Date(year, month - 1, day, 23, 59, 59, 1000);
-		} else if (month) {
-			// 特定の月
-			startDate = new Date(year, month - 1, 1, 0, 0, 0, -1);
-			endDate = new Date(year, month, 1, 0, 0, 0, 0);
-		} else {
-			// 特定の年
-			startDate = new Date(year, 0, 1, 0, 0, 0, -1);
-			endDate = new Date(year + 1, 0, 1, 0, 0, 0, 0);
-		}
-
-		return {
-			after: startDate.toISOString(),
-			before: endDate.toISOString(),
-		};
-	};
-
 	//RestAPIでpostを取得する
 	const [posts, setPosts] = useState([]);
 
@@ -460,7 +429,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			try {
 				const taxonomyTerms = getSelectedTaxonomyTerms();
 				const periodObj = getPeriodQuery(choicePeriod);
-				console.log(periodObj);
+
 				const query = {
 					per_page: numberOfItems,
 					page: currentPage + 1,
@@ -546,10 +515,11 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			for (let i = 0; i < diff; i++) {
 				dispAttributeArray.push({});
 			}
-		} else if (blocksLength > postsLength) {
-			// dispAttributeArrayの長さがpostsの長さより長い場合、余分な要素を削除する
-			dispAttributeArray.splice(postsLength);
 		}
+		// else if (blocksLength > postsLength) {
+		// 	// dispAttributeArrayの長さがpostsの長さより長い場合、余分な要素を削除する
+		// 	dispAttributeArray.splice(postsLength);
+		// }
 		//postsが０のときは空のグループを登録して終了
 		if (dispAttributeArray.length == 0) {
 			const emptyBlock = createBlock("itmar/design-group", {}, []);
@@ -714,6 +684,8 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		// すべてのPromiseが解決された後に処理
 		Promise.all(blocksArray)
 			.then((resolvedBlocks) => {
+				console.log(blocksAttributesArray);
+				console.log(resolvedBlocks);
 				//インナーブロックの入れ替え;
 				if (!_.isEqual(resolvedBlocks, dispAttributeArray)) {
 					replaceInnerBlocks(clientId, resolvedBlocks, false);

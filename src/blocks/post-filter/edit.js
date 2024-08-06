@@ -108,6 +108,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		searchButtonAttributes,
 		monthAttributes,
 		yearAttributes,
+		dayAttributes,
 		taxRelateAttributes,
 		checkBoxAttributes,
 	} = attributes;
@@ -161,14 +162,15 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		);
 	}, [innerBlocks]);
 	//インナーブロック内のDesign Radioボックス
-	const radioBlocks = useMemo(() => {
+	const periodBlocks = useMemo(() => {
 		return allFlattenedBlocks.filter(
 			(block) =>
 				block.attributes.className &&
 				(block.attributes.className?.split(" ").includes("itmar_filter_year") ||
 					block.attributes.className
 						?.split(" ")
-						.includes("itmar_filter_month")),
+						.includes("itmar_filter_month") ||
+					block.attributes.className?.split(" ").includes("itmar_filter_day")),
 		);
 	}, [innerBlocks]);
 
@@ -199,6 +201,8 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				.catch((error) => {
 					console.error("投稿の更新に失敗しました", error);
 				});
+		} else {
+			setFilterItems(builtin_items);
 		}
 	}, [pickupSlug]);
 
@@ -237,6 +241,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 							? {
 									...yearAttributes,
 									optionValues: yearArray,
+									isSetSelect: false,
 									className: yearAttributes.className
 										? yearAttributes.className.includes("itmar_filter_year")
 											? yearAttributes.className
@@ -247,19 +252,31 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 							? {
 									...monthAttributes,
 									optionValues: monthArray,
+									isSetSelect: false,
 									className: monthAttributes.className
 										? monthAttributes.className.includes("itmar_filter_month")
 											? monthAttributes.className
 											: `${monthAttributes.className} itmar_filter_month`
 										: "itmar_filter_month",
 							  }
+							: dateOption === "day"
+							? {
+									...dayAttributes,
+									dateSpan: dateSpan,
+									className: dayAttributes.className
+										? dayAttributes.className.includes("itmar_filter_day")
+											? dayAttributes.className
+											: `${dayAttributes.className} itmar_filter_day`
+										: "itmar_filter_day",
+							  }
 							: {};
-
-					const dateSelectBlock = createBlock(
-						"itmar/design-radio",
-						setDateAttributes,
-						[],
-					);
+					//ブロックの種別を設定
+					const blockKind =
+						dateOption === "year" || dateOption === "month"
+							? "itmar/design-radio"
+							: "itmar/design-calender";
+					//ブロックの生成
+					const dateSelectBlock = createBlock(blockKind, setDateAttributes, []);
 					filterBlocksArray.push(dateSelectBlock);
 				}
 				//タームの登録があればチェックボックスにする
@@ -326,13 +343,13 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				setAttributes({ titleAttributes: titleBolck.attributes });
 			}
 
-			//最初に見つかったitmar_filter_monthブロック
+			//最初に見つかったitmar_filter_yearブロック
 			const yearRadioBolck = allFlattenedBlocks.find(
 				(block) =>
 					block.name === "itmar/design-radio" &&
 					block.attributes.className?.split(" ").includes("itmar_filter_year"),
 			);
-			//チェックブロックの属性を記録
+			//ブロックの属性を記録
 			if (yearRadioBolck) {
 				setAttributes({ yearAttributes: yearRadioBolck.attributes });
 			}
@@ -343,9 +360,21 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					block.name === "itmar/design-radio" &&
 					block.attributes.className?.split(" ").includes("itmar_filter_month"),
 			);
-			//チェックブロックの属性を記録
+			//ブロックの属性を記録
 			if (monthRadioBolck) {
 				setAttributes({ monthAttributes: monthRadioBolck.attributes });
+			}
+
+			//最初に見つかったitmar_filter_dayブロック
+			const dayCalenderBolck = allFlattenedBlocks.find(
+				(block) =>
+					block.name === "itmar/design-calender" &&
+					block.attributes.className?.split(" ").includes("itmar_filter_day"),
+			);
+
+			//ブロックの属性を記録
+			if (dayCalenderBolck) {
+				setAttributes({ dayAttributes: dayCalenderBolck.attributes });
 			}
 
 			//最初に見つかったitmar_filter_checkboxブロック
@@ -363,6 +392,8 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 
 	//チェックボックスブロックの属性変更（クリック）
 	useEffect(() => {
+		//pickUpが存在しないときは処理しない
+		if (!pickup) return;
 		//タクソノミーによるフィルタ
 		if (checkboxBlocks.length > 0) {
 			//チェックボックスのブロックがチェックされているもののinputNameを集めた配列
@@ -380,7 +411,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					taxonomy: term.taxonomy,
 					term: { id: term.id, slug: term.slug },
 				}));
-
+			//タクソノミーの選択に変化があるときだけ属性を変更
 			if (!_.isEqual(selTerms, pickup.attributes.choiceTerms)) {
 				updateBlockAttributes(pickup.clientId, {
 					choiceTerms: selTerms,
@@ -389,16 +420,26 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			}
 		}
 		//日付によるフィルタ
-		if (radioBlocks.length > 0) {
-			const savePeriod = radioBlocks[0].attributes.selectedValues
-				? radioBlocks[0].attributes.selectedValues
-				: "";
-			updateBlockAttributes(pickup.clientId, {
-				choicePeriod: savePeriod,
-				currentPage: 0, //カレントページも０にもどす
-			});
+		if (periodBlocks.length > 0) {
+			const priodAttr = periodBlocks[0].attributes;
+			//発見できた属性名で日、月、年の正瀬尾
+			const savePeriod =
+				priodAttr.selectedMonth && priodAttr.selectedValue
+					? `${priodAttr.selectedMonth}/${priodAttr.selectedValue
+							.toString()
+							.padStart(2, "0")}`
+					: priodAttr.selectedValues
+					? priodAttr.selectedValues
+					: "";
+			//期間の選択に変化があるときだけ属性を変更
+			if (savePeriod != pickup.attributes.choicePeriod) {
+				updateBlockAttributes(pickup.clientId, {
+					choicePeriod: savePeriod,
+					currentPage: 0, //カレントページも０にもどす
+				});
+			}
 		}
-	}, [checkboxBlocks, radioBlocks, pickup, filterItems]);
+	}, [checkboxBlocks, periodBlocks, pickup, filterItems]);
 
 	const today = new Date();
 

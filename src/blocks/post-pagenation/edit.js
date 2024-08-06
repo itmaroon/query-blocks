@@ -88,22 +88,29 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		}),
 		[selectedBlockId],
 	);
-	//エディタ内ブロックを平坦化
-	const allFlattenedBlocks = flattenBlocks(targetBlocks);
-	//エディタ内ブロックからitmar/post-pickupを探索
-	const pickupPosts = allFlattenedBlocks.filter(
-		(block) => block.name === "itmar/pickup-posts",
-	);
-
-	//pickupブロックの取得
-	const pickup = allFlattenedBlocks.find(
-		(block) => block.attributes.pickupId === selectedBlockId,
-	);
 
 	//属性変更関数を取得
 	const { updateBlockAttributes } = useDispatch("core/block-editor");
-	//ボタンがクリックされたときの判定フラグ
+	//エディタ内のブロックが変化したときpickupを更新
+	const [pickupPosts, setPickupPosts] = useState([]);
+	const [pickup, setPickup] = useState(null);
+	useEffect(() => {
+		//エディタ内ブロックを平坦化
+		const allFlattenedBlocks = flattenBlocks(targetBlocks);
+		//エディタ内ブロックからitmar/post-pickupを探索
+		setPickupPosts(
+			allFlattenedBlocks.filter((block) => block.name === "itmar/pickup-posts"),
+		);
 
+		//pickupブロックの取得
+		setPickup(
+			allFlattenedBlocks.find(
+				(block) => block.attributes.pickupId === selectedBlockId,
+			),
+		);
+	}, [targetBlocks]);
+
+	//ボタンがクリックされたときの判定フラグ
 	const [allIsClickFalse, setAllIsClickFalse] = useState(true);
 	//design-blockの属性変更（クリックを含む)
 	useEffect(() => {
@@ -169,7 +176,9 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			}
 			//カレントページの変更
 			//setAttributes({ currentPage: setPage });
+
 			setCurrentPage(setPage);
+
 			//post-pickupのカレントページの変更
 			if (pickup) {
 				updateBlockAttributes(pickup.clientId, {
@@ -199,6 +208,10 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				setSelectedPostTotal(pickup.attributes.numberOfTotal);
 				setSelectedDispNum(pickup.attributes.numberOfItems);
 				setCurrentPage(pickup.attributes.currentPage);
+			} else {
+				setSelectedPostTotal(0);
+				setSelectedDispNum(3);
+				setCurrentPage(0);
 			}
 		}
 	}, [pickup]); //ターゲットのpickup-blockが更新された

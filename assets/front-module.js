@@ -8,10 +8,12 @@ import {
 import { StyleComp as StyleGroup } from "../../block-collections/src/blocks/design-group/StyleGroup";
 import { StyleComp as StyleButton } from "../../block-collections/src/blocks/design-button/StyleButton";
 import { createRoot } from "react-dom/client";
-import { restTaxonomies } from "itmar-block-packages";
+import { restTaxonomies, getPeriodQuery } from "itmar-block-packages";
 
 // プロミスを格納する配列
 const promises = [];
+//期間のオブジェクトを格納する変数
+let periodQueryObj = {};
 
 const getBlockMapValue = (blockMap, fieldName) => {
 	//blockMapのキーが.で区切られている場合は、最後の.の後の文字列から
@@ -222,7 +224,10 @@ const pageChange = (pickup, currentPage) => {
 	const selectedRest = pickup.dataset.selected_rest;
 	const taxRelateType = pickup.dataset.tax_relate_type;
 	const choiceTerms = JSON.parse(pickup.dataset.choice_terms);
+
 	const blockMap = JSON.parse(pickup.dataset.block_map);
+	console.log(periodQueryObj);
+
 	//タームのセレクトオブジェクト
 	const selectTerms = getSelectedTaxonomyTerms(choiceTerms, taxRelateType);
 
@@ -232,6 +237,7 @@ const pageChange = (pickup, currentPage) => {
 		page: currentPage + 1,
 		_embed: true,
 		...selectTerms,
+		...periodQueryObj,
 	})
 		.then((data) => {
 			const postUnits = pickup.querySelectorAll(".post_unit")[0];
@@ -270,6 +276,7 @@ const pageChange = (pickup, currentPage) => {
 		getEntityRecordsFromAPI(selectedRest, {
 			per_page: -1,
 			...selectTerms,
+			...periodQueryObj,
 		})
 			.then((data) => {
 				//トータルのページ数を算出
@@ -524,6 +531,46 @@ document.addEventListener("DOMContentLoaded", () => {
 						pageChange(pickup, 0); //表示ページの変更
 					});
 				});
+				//デザイングループのdateからラジオボタンを抽出
+				const dateContainer = document.querySelector(
+					".itmar_filter_month, .itmar_filter_year, .itmar_filter_day",
+				);
+				const name = dateContainer.getAttribute("data-input_name"); // ラジオボタンのname属性
+
+				if (name) {
+					const radios = dateContainer.querySelectorAll(
+						`input[type="radio"][name="${name}"]`,
+					);
+					radios.forEach((radio) => {
+						radio.addEventListener("change", function () {
+							// チェックされているラジオボタンの値を表示（未選択の場合はundefined）
+							const checkedRadio = dateContainer.querySelector(
+								`input[type="radio"][name="${name}"]:checked`,
+							);
+							if (checkedRadio) {
+								let period = "";
+								//カレンダーの時はセレクト要素が抽出できる
+								const select = dateContainer.querySelector(
+									".itmar_block_select select",
+								);
+								if (select) {
+									const selectedValue =
+										select.options[select.selectedIndex].value;
+									period = `${selectedValue}/${checkedRadio.value
+										.toString()
+										.padStart(2, "0")}`;
+								} else {
+									period = checkedRadio.value;
+								}
+								const periodObj = getPeriodQuery(period);
+								periodQueryObj = { ...periodObj };
+							} else {
+								periodQueryObj = null;
+							}
+							pageChange(pickup, 0); //表示ページの変更
+						});
+					});
+				}
 			})
 			.catch((error) => {
 				console.error("投稿の更新に失敗しました", error);
