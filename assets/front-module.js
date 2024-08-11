@@ -12,6 +12,8 @@ import { restTaxonomies, getPeriodQuery } from "itmar-block-packages";
 
 // プロミスを格納する配列
 const promises = [];
+//タームによるフィルタを格納する変数
+let termQueryObj = [];
 //期間のオブジェクトを格納する変数
 let periodQueryObj = {};
 
@@ -159,13 +161,17 @@ const ModifyFieldElement = (element, post, blockMap) => {
 					break;
 				case "core/image":
 					const iElement = element.querySelector("img");
-					// 現在のmediaIdを取得
+					console.log(iElement);
+					// 現在のmediaIdを取得（イメージ要素にクラス名がある場合）
+
 					const currentMediaId = iElement.classList
 						.toString()
-						.match(/wp-image-(\d+)/)[1];
+						.match(/wp-image-(\d+)/)
+						? iElement.classList.toString().match(/wp-image-(\d+)/)[1]
+						: undefined;
 
 					if (iElement) {
-						if (!fieldValue) {
+						if (!fieldValue && currentMediaId) {
 							//mediaIDがセットされていなければノーイメージ画像を設定して終了
 							iElement.classList.remove(`wp-image-${currentMediaId}`);
 							iElement.classList.add("wp-image-000");
@@ -211,6 +217,7 @@ const ModifyFieldElement = (element, post, blockMap) => {
 								}),
 						);
 					}
+
 					break;
 			}
 		}
@@ -223,13 +230,12 @@ const pageChange = (pickup, currentPage) => {
 	const numberOfItems = pickup.dataset.number_of_items;
 	const selectedRest = pickup.dataset.selected_rest;
 	const taxRelateType = pickup.dataset.tax_relate_type;
-	const choiceTerms = JSON.parse(pickup.dataset.choice_terms);
+	//const choiceTerms = JSON.parse(pickup.dataset.choice_terms);
 
 	const blockMap = JSON.parse(pickup.dataset.block_map);
-	console.log(periodQueryObj);
 
 	//タームのセレクトオブジェクト
-	const selectTerms = getSelectedTaxonomyTerms(choiceTerms, taxRelateType);
+	const selectTerms = getSelectedTaxonomyTerms(termQueryObj, taxRelateType);
 
 	//RestAPIで結果を取得
 	getEntityRecordsFromAPI(selectedRest, {
@@ -526,7 +532,7 @@ document.addEventListener("DOMContentLoaded", () => {
 							})
 							.filter((item) => item !== null);
 						//チェックされたタームを新しい選択項目としてデータセット
-						pickup.dataset.choice_terms = JSON.stringify(checkedArray);
+						termQueryObj = checkedArray;
 
 						pageChange(pickup, 0); //表示ページの変更
 					});

@@ -4,7 +4,13 @@
  *
  * Replace them with your own styles or remove the file completely.
  */
-.wp-block-itmar-pickup-posts .unit_hide {
-  display: none;
+.wp-block-itmar-post-filter {
+  box-sizing: border-box;
+}
+.wp-block-itmar-post-filter input[type=text] {
+  width: 100%;
+}
+.wp-block-itmar-post-filter .error {
+  color: var(--wp--preset--color--err-message);
 }
 /*# sourceMappingURL=style.css.map */

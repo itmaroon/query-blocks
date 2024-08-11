@@ -108,6 +108,21 @@ const createBlocksFromObject = async (blockObject) => {
 		//インナーブロックのPromise解決
 		innerBlocksArray = await Promise.all(innerBlocksPromises);
 	}
+	//ブロックがdesign-groupでblockNumがnull（投稿データのないインナーブロック）の場合
+	//（参考）design-groupのblockNumはデフォルトで1
+	if (blockName === "itmar/design-group" && attributes.blockNum == null) {
+		return createBlock(
+			blockName,
+			{ ...attributes, className: "post_empty" }, //post_emptyクラスをつけて格納
+			innerBlocksArray,
+		);
+	} else if (
+		blockName === "itmar/design-group" &&
+		attributes.blockNum != null
+	) {
+		const { className, ...newAttributes } = attributes; //クラス名を外す
+		return createBlock(blockName, newAttributes, innerBlocksArray);
+	}
 	//ブロックがコアイメージでidが設定されている場合
 	if (blockName === "core/image" && attributes.id) {
 		try {
@@ -127,13 +142,13 @@ const createBlocksFromObject = async (blockObject) => {
 			}; //idをぬいてurlとaltを足す
 			return createBlock(blockName, newAttributes, innerBlocksArray);
 		}
-	} else if (!attributes.id) {
-		const { url, alt, ...newAttributes } = attributes;
+	} else if (blockName === "core/image" && !attributes.id) {
+		//const { url, alt, ...newAttributes } = attributes;
 		//urlとaltを抜く
-		return createBlock(blockName, newAttributes, innerBlocksArray);
-	} else {
 		return createBlock(blockName, attributes, innerBlocksArray);
 	}
+	//その他のブロック
+	return createBlock(blockName, attributes, innerBlocksArray);
 };
 
 //ブロックにクラス名が含まれるかを判定する関数
@@ -237,6 +252,7 @@ const FieldClassNameObj = (blockObject) => {
 	}
 	// classNamesが空配列ではない場合、classNamesの最初の要素とblockObjectをペアにしたオブジェクトを要素とする配列を返す
 	if (classNames.length > 0) {
+		console.log(blockObject);
 		const fieldValue =
 			blockObject.blockName === "itmar/design-title"
 				? blockObject.attributes.headingContent
@@ -330,7 +346,7 @@ const mergeBlocks = (fieldArray, changeBlock) => {
 	if (!changeBlock) return null;
 
 	const { blockName, attributes, innerBlocks } = changeBlock;
-	// attributes の処理
+	// attributesをprocessedAttributesにコピー
 	const processedAttributes = { ...attributes };
 
 	// className の確認とfield_以降の文字列の抽出
@@ -342,11 +358,12 @@ const mergeBlocks = (fieldArray, changeBlock) => {
 			.find((cls) => cls.startsWith("field_"));
 
 	if (fieldClass) {
+		console.log(fieldArray);
 		const fieldName = fieldClass.split("field_")[1];
 		const fieldValue = fieldArray.find(
 			(item) => item.fieldName === fieldName,
 		).fieldValue;
-
+		//フィールドのデータはコピー前のデータに書き戻す
 		switch (blockName) {
 			case "itmar/design-title":
 				processedAttributes.headingContent = fieldValue;
@@ -355,7 +372,10 @@ const mergeBlocks = (fieldArray, changeBlock) => {
 				processedAttributes.content = fieldValue;
 				break;
 			case "core/image":
-				processedAttributes.id = fieldValue;
+				if (fieldValue) {
+					processedAttributes.id = fieldValue;
+				}
+
 				break;
 			// 他のブロックタイプに対する処理をここに追加できます
 		}
@@ -515,38 +535,42 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			for (let i = 0; i < diff; i++) {
 				dispAttributeArray.push({});
 			}
+		} else if (blocksLength > numberOfItems) {
+			// dispAttributeArrayの長さがnumberOfItemsの長さより長い場合、余分な要素を削除する
+			dispAttributeArray.splice(postsLength);
 		}
-		// else if (blocksLength > postsLength) {
-		// 	// dispAttributeArrayの長さがpostsの長さより長い場合、余分な要素を削除する
-		// 	dispAttributeArray.splice(postsLength);
-		// }
 		//postsが０のときは空のグループを登録して終了
-		if (dispAttributeArray.length == 0) {
+		if (posts.length == 0) {
 			const emptyBlock = createBlock("itmar/design-group", {}, []);
 			replaceInnerBlocks(clientId, emptyBlock, false);
 			return;
 		}
-		//postの数分のデータを生成
+		//blocksAttributesArrayの数分のブロックを生成
 		const blocksArray = [];
 		let diffIdFlg = false;
-		posts.forEach((post, index) => {
-			//dispAttributeArray[index]が{}ならitmar/design-groupブロックを挿入
-			if (Object.keys(dispAttributeArray[index]).length === 0) {
-				Object.assign(dispAttributeArray[index], {
+
+		dispAttributeArray.forEach((dispAttribute, index) => {
+			//投稿データ（posts）がひな型（dispAttribute）の数に満たないときは最後の投稿データで埋める
+			//idはnullに書き換え
+			const post =
+				index < posts.length ? posts[index] : { ...posts[0], id: null };
+
+			//dispAttributeが{}ならitmar/design-groupブロックを挿入
+			if (Object.keys(dispAttribute).length === 0) {
+				Object.assign(dispAttribute, {
 					blockName: "itmar/design-group",
 					attributes: {},
 				});
 			}
 			//最上位のitmar/design-groupのblockNum属性にpost.idをセットする（ブロック属性と一致している場合は入れ替えずフラグを立てる）
-			if (dispAttributeArray[index].attributes.blockNum != post.id) {
-				dispAttributeArray[index].attributes.blockNum = post.id;
+			if (dispAttribute.attributes.blockNum != post?.id) {
+				dispAttribute.attributes.blockNum = post?.id;
 				diffIdFlg = true;
 			} else {
 				diffIdFlg = false; //post.idの変更がないことを示すフラグ
 			}
 
-			dispAttributeArray[index].attributes.blockNum = post.id;
-
+			//dispAttribute.attributes.blockNum = post.id;
 			//追加するブロック
 			const addBlocks = [];
 
@@ -558,101 +582,109 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				const element_field = field.includes(".")
 					? field.substring(field.lastIndexOf(".") + 1)
 					: field;
+				if (post) {
+					//element_field値に応じた属性の初期値を生成
+					let blockAttributes =
+						element_field === "title"
+							? {
+									className: "field_title",
+									headingContent: post.title.rendered
+										? post.title.rendered
+										: __("No title", "post-blocks"),
+							  }
+							: element_field === "date"
+							? {
+									className: "field_date",
+									headingContent: format("Y.n.j", post.date),
+							  }
+							: element_field === "featured_media" &&
+							  post._embedded["wp:featuredmedia"][0].id
+							? {
+									className: "itmar_ex_block field_featured_media",
+									id: post._embedded["wp:featuredmedia"][0].id,
+							  }
+							: element_field === "featured_media" &&
+							  !post._embedded["wp:featuredmedia"][0].id
+							? {
+									className: "itmar_ex_block field_featured_media",
+									url: `${post_blocks.plugin_url}/assets/no-image.png`,
+							  }
+							: element_field === "excerpt"
+							? {
+									className: "itmar_ex_block field_excerpt",
+									content: post.excerpt.rendered
+										? post.excerpt.rendered.replace(/<\/?p>/g, "") //pタグを除去する
+										: __("No excerpt", "post-blocks"),
+							  }
+							: null;
 
-				//element_field値に応じた属性の初期値を生成
-				let blockAttributes =
-					element_field === "title"
-						? {
-								className: "field_title",
-								headingContent: post.title.rendered
-									? post.title.rendered
-									: __("No title", "post-blocks"),
-						  }
-						: element_field === "date"
-						? {
-								className: "field_date",
-								headingContent: format("Y.n.j", post.date),
-						  }
-						: element_field === "featured_media"
-						? {
-								className: "itmar_ex_block field_featured_media",
-								id: post._embedded["wp:featuredmedia"][0].id,
-						  }
-						: element_field === "excerpt"
-						? {
-								className: "itmar_ex_block field_excerpt",
-								content: post.excerpt.rendered
-									? post.excerpt.rendered.replace(/<\/?p>/g, "") //pタグを除去する
-									: __("No excerpt", "post-blocks"),
-						  }
-						: null;
-				//カスタムフィールドの場合
-				if (!blockAttributes) {
-					//カスタムフィールドの値取得
-					const costumFieldValue = searchFieldObjects(
-						{ ...post.acf, ...post.meta },
+					//カスタムフィールドの場合
+					if (!blockAttributes) {
+						//カスタムフィールドの値取得
+						const costumFieldValue = searchFieldObjects(
+							{ ...post.acf, ...post.meta },
+							element_field,
+						);
+
+						const blockname = blockMap[field];
+
+						switch (blockname) {
+							case "itmar/design-title":
+								const setValue =
+									typeof costumFieldValue === "number"
+										? costumFieldValue.toString()
+										: costumFieldValue;
+								blockAttributes = {
+									className: `field_${element_field}`,
+									headingContent: setValue,
+								};
+
+								break;
+							case "core/paragraph":
+								blockAttributes = {
+									className: `itmar_ex_block field_${element_field}`,
+									content: costumFieldValue,
+								};
+								break;
+							case "core/image":
+								blockAttributes = {
+									className: `itmar_ex_block field_${element_field}`,
+									id: costumFieldValue,
+								};
+								break;
+							default:
+								blockAttributes = {
+									className: `field_${element_field}`,
+									headingContent: costumFieldValue,
+								};
+						}
+					}
+
+					//innerBlocksAttributesに指定されたフィールド用ブロックが存在するか。存在したら属性を上書き
+					const is_field = hasMatchingClassName(
+						dispAttribute,
 						element_field,
+						blockMap[field],
+						blockAttributes,
+						diffIdFlg,
 					);
 
-					const blockname = blockMap[field];
-
-					switch (blockname) {
-						case "itmar/design-title":
-							const setValue =
-								typeof costumFieldValue === "number"
-									? costumFieldValue.toString()
-									: costumFieldValue;
-							blockAttributes = {
-								className: `field_${element_field}`,
-								headingContent: setValue,
-							};
-
-							break;
-						case "core/paragraph":
-							blockAttributes = {
-								className: `itmar_ex_block field_${element_field}`,
-								content: costumFieldValue,
-							};
-							break;
-						case "core/image":
-							blockAttributes = {
-								className: `itmar_ex_block field_${element_field}`,
-								id: costumFieldValue,
-							};
-							break;
-						default:
-							blockAttributes = {
-								className: `field_${element_field}`,
-								headingContent: costumFieldValue,
-							};
+					if (!is_field) {
+						//登録されていなければinnerBlocksAttributesにフィールド用ブロックを追加
+						const blockname = blockMap[field] || "itmar/design-title";
+						addBlocks.push({
+							blockName: blockname,
+							attributes: blockAttributes,
+						});
 					}
-				}
-
-				//innerBlocksAttributesに指定されたフィールド用ブロックが存在するか。存在したら属性を上書き
-				const is_field = hasMatchingClassName(
-					dispAttributeArray[index],
-					element_field,
-					blockMap[field],
-					blockAttributes,
-					diffIdFlg,
-				);
-
-				if (!is_field) {
-					//登録されていなければinnerBlocksAttributesにフィールド用ブロックを追加
-					const blockname = blockMap[field] || "itmar/design-title";
-					addBlocks.push({
-						blockName: blockname,
-						attributes: blockAttributes,
-					});
 				}
 			}
 
 			//追加すべきフィールド表示用ブロックがあれば追加
-
 			const addBlockobject = {
-				...dispAttributeArray[index],
-				innerBlocks: dispAttributeArray[index].innerBlocks
-					? [...dispAttributeArray[index].innerBlocks]
+				...dispAttribute,
+				innerBlocks: dispAttribute.innerBlocks
+					? [...dispAttribute.innerBlocks]
 					: [],
 			}; //クローンを作成
 
@@ -673,7 +705,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				addBlockobject,
 				choiceFields,
 			);
-
 			//filteredBlockObjectからreplaceInnerBlocks用のブロックオブジェクトを生成し、インナーブロックをレンダリング
 			const blocksObj = createBlocksFromObject(filteredBlockObject); //Promiseで返ってくる
 
@@ -684,12 +715,8 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		// すべてのPromiseが解決された後に処理
 		Promise.all(blocksArray)
 			.then((resolvedBlocks) => {
-				console.log(blocksAttributesArray);
-				console.log(resolvedBlocks);
 				//インナーブロックの入れ替え;
-				if (!_.isEqual(resolvedBlocks, dispAttributeArray)) {
-					replaceInnerBlocks(clientId, resolvedBlocks, false);
-				}
+				replaceInnerBlocks(clientId, resolvedBlocks, false);
 			})
 			.catch((error) => {
 				// エラーハンドリング
@@ -712,6 +739,9 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		innerBlocks.forEach((unitBlock) => {
 			//ユニットごとにポストデータを記録
 			const unitAttribute = getBlockAttributes(unitBlock);
+			//blockNumがnullの時は処理しない
+			if (unitAttribute.attributes.blockNum == null) return;
+
 			//ブロックに記入された内容を取得
 			const fieldObjs = FieldClassNameObj(unitAttribute);
 			if (!fieldObjs) return; //入力フィールドがない場合は処理しない
@@ -809,7 +839,11 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			});
 			//インナーブロックが設定された表示数より少ないときはblocksAttributesArrayで埋める
 			let index = blockAttrArray.length % blocksAttributesArray.length;
-			while (blockAttrArray.length < blocksAttributesArray.length) {
+			//上限はnumberOfItemsとする（表示数に応じたひな型を確保）
+			while (
+				blockAttrArray.length < blocksAttributesArray.length &&
+				blockAttrArray.length < numberOfItems
+			) {
 				blockAttrArray.push(blocksAttributesArray[index]);
 				index = (index + 1) % blocksAttributesArray.length;
 			}
@@ -935,6 +969,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 											const fieldArray = FieldClassNameObj(
 												updatedBlocksAttributes[index],
 											);
+
 											//新しいブロックのスタイル属性にブロックエディタ上のフィールドの値を戻す
 											const mergedBlock = mergeBlocks(
 												fieldArray,
@@ -959,6 +994,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 
 											//配列の要素を入れ替える
 											updatedBlocksAttributes[index] = newElement;
+
 											//属性を変更
 											setAttributes({
 												blocksAttributesArray: updatedBlocksAttributes,

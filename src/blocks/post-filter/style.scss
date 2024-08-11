@@ -5,8 +5,11 @@
  * Replace them with your own styles or remove the file completely.
  */
 
-.wp-block-itmar-thanks-figure-block {
+.wp-block-itmar-post-filter {
 	box-sizing: border-box;
+	input[type="text"] {
+		width: 100%;
+	}
 
 	.error {
 		color: var(--wp--preset--color--err-message);

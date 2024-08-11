@@ -104,7 +104,8 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		dateSpan,
 		groupBlockAttributes,
 		titleAttributes,
-		serachBoxAttributes,
+		groupSearchAttributes,
+		searchBoxAttributes,
 		searchButtonAttributes,
 		monthAttributes,
 		yearAttributes,
@@ -185,10 +186,12 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	//選択されたpickupで設定されているポストタイプに紐づいているタクソノミーをフィルター項目に追加
 	const [filterItems, setFilterItems] = useState(builtin_items);
 	const pickupSlug = pickup?.attributes.selectedSlug;
+	const [isfilterReady, setIsfilterReady] = useState(false); //タクソノミーの情報を取得できたかのフラグ
 	useEffect(() => {
 		if (pickupSlug) {
 			restTaxonomies(pickupSlug)
 				.then((response) => {
+					setIsfilterReady(true); //準備完了フラグをオン
 					const taxArray = response.map((res) => {
 						return {
 							value: res.slug,
@@ -196,7 +199,11 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 							terms: res.terms,
 						};
 					});
-					setFilterItems([...filterItems, ...taxArray]);
+					//一旦
+					const removeTax = filterItems.filter(
+						(item) => !item.hasOwnProperty("terms"),
+					);
+					setFilterItems([...removeTax, ...taxArray]);
 				})
 				.catch((error) => {
 					console.error("投稿の更新に失敗しました", error);
@@ -226,9 +233,32 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					setTitleAttributes,
 				);
 				filterBlocksArray.push(titleBlock);
+
 				//フィルタアイテムが検索のとき
 				if (filterItem.value === "search") {
+					const searchBlocksArray = [];
 					//インプットボックスの属性
+					const searchInput = createBlock("itmar/design-text-ctrl", {
+						className: "itmar_filter_searchbox",
+						...searchBoxAttributes,
+					});
+					const searchButton = createBlock("itmar/design-button", {
+						className: "itmar_filter_searchbutton",
+						...searchButtonAttributes,
+					});
+					searchBlocksArray.push(searchInput);
+					searchBlocksArray.push(searchButton);
+					//design-groupを用意
+					const searchGroup = createBlock(
+						"itmar/design-group",
+						{
+							className: filterItem.value,
+							...groupSearchAttributes, //デフォルトのクループ設定
+						},
+						searchBlocksArray,
+					);
+
+					filterBlocksArray.push(searchGroup);
 				}
 				//フィルタアイテムが日付のとき
 				if (filterItem.value === "date") {
@@ -251,6 +281,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 							: dateOption === "month"
 							? {
 									...monthAttributes,
+
 									optionValues: monthArray,
 									isSetSelect: false,
 									className: monthAttributes.className
@@ -343,6 +374,27 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				setAttributes({ titleAttributes: titleBolck.attributes });
 			}
 
+			//最初に見つかったitmar_filter_searchboxブロック
+			const searchBoxBolck = allFlattenedBlocks.find(
+				(block) =>
+					block.name === "itmar/design-text-ctrl" &&
+					block.attributes.className === "itmar_filter_searchbox",
+			);
+			//属性を記録
+			if (searchBoxBolck) {
+				setAttributes({ searchBoxAttributes: searchBoxBolck.attributes });
+			}
+			//最初に見つかったitmar_filter_searchboxブロック
+			const searchButtonBolck = allFlattenedBlocks.find(
+				(block) =>
+					block.name === "itmar/design-button" &&
+					block.attributes.className === "itmar_filter_searchbutton",
+			);
+			//属性を記録
+			if (searchButtonBolck) {
+				setAttributes({ searchButtonAttributes: searchButtonBolck.attributes });
+			}
+
 			//最初に見つかったitmar_filter_yearブロック
 			const yearRadioBolck = allFlattenedBlocks.find(
 				(block) =>
@@ -390,20 +442,23 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		}
 	}, [innerBlocks]);
 
-	//チェックボックスブロックの属性変更（クリック）
+	//チェックボックスブロック・期間ブロックの属性変更（クリック）
 	useEffect(() => {
 		//pickUpが存在しないときは処理しない
 		if (!pickup) return;
 		//タクソノミーによるフィルタ
 		if (checkboxBlocks.length > 0) {
 			//チェックボックスのブロックがチェックされているもののinputNameを集めた配列
+
 			const checkedTerms = checkboxBlocks
 				.filter((block) => block.attributes.inputValue === true)
 				.map((block) => block.attributes.inputName);
+
 			//filterItemsからtermの情報を収集
 			const termsInfo = filterItems
 				.filter((item) => "terms" in item)
 				.flatMap((item) => item.terms);
+
 			//選択されたtermのスラッグからterm情報を取得して新たなターム情報を生成
 			const selTerms = termsInfo
 				.filter((term) => term.slug && checkedTerms.includes(term.slug))
@@ -411,8 +466,12 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					taxonomy: term.taxonomy,
 					term: { id: term.id, slug: term.slug },
 				}));
-			//タクソノミーの選択に変化があるときだけ属性を変更
-			if (!_.isEqual(selTerms, pickup.attributes.choiceTerms)) {
+
+			//タクソノミーの選択に変化があるときだけ属性を変更(タクソノミー情報取得後)
+			if (
+				!_.isEqual(selTerms, pickup.attributes.choiceTerms) &&
+				isfilterReady
+			) {
 				updateBlockAttributes(pickup.clientId, {
 					choiceTerms: selTerms,
 					currentPage: 0, //カレントページも０にもどす
@@ -422,7 +481,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		//日付によるフィルタ
 		if (periodBlocks.length > 0) {
 			const priodAttr = periodBlocks[0].attributes;
-			//発見できた属性名で日、月、年の正瀬尾
+			//発見できた属性名で日、月、年の峻別
 			const savePeriod =
 				priodAttr.selectedMonth && priodAttr.selectedValue
 					? `${priodAttr.selectedMonth}/${priodAttr.selectedValue
