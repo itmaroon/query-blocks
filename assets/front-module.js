@@ -156,12 +156,11 @@ const ModifyFieldElement = (element, post, blockMap) => {
 					break;
 
 				case "core/paragraph":
-					// pの内容を書き換える
+					// pの内容を書き換える頻度
 					element.innerHTML = fieldValue.rendered;
 					break;
 				case "core/image":
 					const iElement = element.querySelector("img");
-					console.log(iElement);
 					// 現在のmediaIdを取得（イメージ要素にクラス名がある場合）
 
 					const currentMediaId = iElement.classList

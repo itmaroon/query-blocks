@@ -147,6 +147,11 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		return flattenBlocks(targetBlocks);
 	}, [targetBlocks]);
 
+	//インナーブロックのブロックを平坦化
+	const innerFlattenedBlocks = useMemo(() => {
+		return flattenBlocks(innerBlocks);
+	}, [innerBlocks]);
+
 	//エディタ内ブロックからitmar/post-pickupを探索
 	const pickupPosts = useMemo(() => {
 		return allFlattenedBlocks.filter(
@@ -154,9 +159,31 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		);
 	}, [targetBlocks]);
 
+	//インナーブロック内の検索用ボタン
+	const searchBox = useMemo(() => {
+		return innerFlattenedBlocks.find(
+			(block) =>
+				block.attributes.className &&
+				block.attributes.className
+					?.split(" ")
+					.includes("itmar_filter_searchbox"),
+		);
+	}, [innerBlocks]);
+
+	//インナーブロック内の検索用ボタン
+	const searchButton = useMemo(() => {
+		return innerFlattenedBlocks.find(
+			(block) =>
+				block.attributes.className &&
+				block.attributes.className
+					?.split(" ")
+					.includes("itmar_filter_searchbutton"),
+		);
+	}, [innerBlocks]);
+
 	//インナーブロック内のDesign Checkボックス
 	const checkboxBlocks = useMemo(() => {
-		return allFlattenedBlocks.filter(
+		return innerFlattenedBlocks.filter(
 			(block) =>
 				block.attributes.className &&
 				block.attributes.className.includes("itmar_filter_checkbox"),
@@ -164,7 +191,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	}, [innerBlocks]);
 	//インナーブロック内のDesign Radioボックス
 	const periodBlocks = useMemo(() => {
-		return allFlattenedBlocks.filter(
+		return innerFlattenedBlocks.filter(
 			(block) =>
 				block.attributes.className &&
 				(block.attributes.className?.split(" ").includes("itmar_filter_year") ||
@@ -498,7 +525,22 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				});
 			}
 		}
-	}, [checkboxBlocks, periodBlocks, pickup, filterItems]);
+		//検索ボックスによるフィルタ
+		if (searchButton) {
+			if (searchButton.attributes.isClick) {
+				updateBlockAttributes(searchButton.clientId, {
+					isClick: false, //クリックフラグをもどす
+				});
+				//検索キーワードをpickupの属性にセット
+				const keyWord = searchBox.attributes.inputValue;
+				console.log(keyWord);
+				updateBlockAttributes(pickup.clientId, {
+					searchWord: keyWord,
+					currentPage: 0, //カレントページも０にもどす
+				});
+			}
+		}
+	}, [checkboxBlocks, periodBlocks, pickup, filterItems, searchButton]);
 
 	const today = new Date();
 

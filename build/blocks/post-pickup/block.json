@@ -49,6 +49,10 @@
       "type": "string",
       "default": ""
     },
+    "searchWord": {
+      "type": "string",
+      "default": ""
+    },
     "blockMap": {
       "type": "object",
       "default": {

@@ -190,10 +190,11 @@ const hasMatchingClassName = (
 		if (field === className) {
 			// 一致するクラス名が見つかった場合は、overrideAttributesで属性を上書き
 			if (blockObject.blockName === blockName) {
-				if (isChangeId) {
-					//投稿IDが変化していればレンダリング内容を変更
-					Object.assign(blockObject.attributes, overrideAttributes);
-				}
+				// if (isChangeId) {
+				// 	//投稿IDが変化していればレンダリング内容を変更
+				// 	Object.assign(blockObject.attributes, overrideAttributes);
+				// }
+				Object.assign(blockObject.attributes, overrideAttributes);
 			} else {
 				blockObject.attributes = overrideAttributes; //blockNameが変わった時はすべての属性を入れ替え
 			}
@@ -252,7 +253,6 @@ const FieldClassNameObj = (blockObject) => {
 	}
 	// classNamesが空配列ではない場合、classNamesの最初の要素とblockObjectをペアにしたオブジェクトを要素とする配列を返す
 	if (classNames.length > 0) {
-		console.log(blockObject);
 		const fieldValue =
 			blockObject.blockName === "itmar/design-title"
 				? blockObject.attributes.headingContent
@@ -358,7 +358,6 @@ const mergeBlocks = (fieldArray, changeBlock) => {
 			.find((cls) => cls.startsWith("field_"));
 
 	if (fieldClass) {
-		console.log(fieldArray);
 		const fieldName = fieldClass.split("field_")[1];
 		const fieldValue = fieldArray.find(
 			(item) => item.fieldName === fieldName,
@@ -400,6 +399,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		taxRelateType,
 		choiceFields,
 		choicePeriod,
+		searchWord,
 		numberOfItems,
 		numberOfTotal,
 		currentPage,
@@ -443,49 +443,71 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 
 	//RestAPIでpostを取得する
 	const [posts, setPosts] = useState([]);
-
-	useEffect(() => {
-		const fetchPosts = async () => {
-			try {
-				const taxonomyTerms = getSelectedTaxonomyTerms();
-				const periodObj = getPeriodQuery(choicePeriod);
-
-				const query = {
-					per_page: numberOfItems,
-					page: currentPage + 1,
-					_embed: true,
-					...taxonomyTerms,
-					...periodObj,
-				};
-				const totalQuery = {
-					...taxonomyTerms,
-					...periodObj,
-					per_page: -1,
-				};
-
-				const queryString = Object.entries(query)
-					.map(([key, value]) => `${key}=${value}`)
-					.join("&");
-				const totalString = Object.entries(totalQuery)
-					.map(([key, value]) => `${key}=${value}`)
-					.join("&");
-
-				const postsResponse = await apiFetch({
-					path: `/wp/v2/${selectedRest}?${queryString}`,
-				});
-
-				const totalPostsResponse = await apiFetch({
-					path: `/wp/v2/${selectedRest}?${totalString}`,
-				});
-
-				setPosts(postsResponse);
-				setAttributes({ numberOfTotal: totalPostsResponse.length });
-			} catch (error) {
-				console.log(error);
-			}
+	const fetchSearch = async (term) => {
+		const query = {
+			search: term,
+			post_type: selectedSlug,
+			per_page: numberOfItems,
+			page: currentPage + 1,
 		};
 
-		fetchPosts();
+		const queryString = new URLSearchParams(query).toString();
+
+		try {
+			const response = await fetch(
+				`${post_blocks.home_url}/wp-json/itmar-rest-api/v1/search?${queryString}`,
+			);
+			const data = await response.json();
+			console.log(data);
+			setPosts(data.posts);
+			setAttributes({ numberOfTotal: data.total });
+			// データの処理
+		} catch (error) {
+			console.error("Failed to fetch posts:", error);
+		}
+	};
+
+	const fetchPosts = async () => {
+		try {
+			const taxonomyTerms = getSelectedTaxonomyTerms();
+			const periodObj = getPeriodQuery(choicePeriod);
+			//ページに表示する分のデータを取得
+			const query = {
+				per_page: numberOfItems,
+				page: currentPage + 1,
+				_embed: true,
+				search: searchWord,
+				...taxonomyTerms,
+				...periodObj,
+			};
+			const queryString = new URLSearchParams(query).toString();
+
+			//フィルタの全データを取得
+			const totalQuery = {
+				...taxonomyTerms,
+				...periodObj,
+				search: searchWord,
+				per_page: -1,
+			};
+			const totalString = new URLSearchParams(totalQuery).toString();
+
+			const postsResponse = await apiFetch({
+				path: `/wp/v2/${selectedRest}?${queryString}`,
+			});
+
+			const totalPostsResponse = await apiFetch({
+				path: `/wp/v2/${selectedRest}?${totalString}`,
+			});
+			console.log(postsResponse);
+			setPosts(postsResponse);
+			setAttributes({ numberOfTotal: totalPostsResponse.length });
+		} catch (error) {
+			console.log(error);
+		}
+	};
+	useEffect(() => {
+		//fetchPosts();
+		fetchSearch(searchWord);
 	}, [
 		numberOfItems,
 		currentPage,
@@ -493,6 +515,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		choiceTerms,
 		taxRelateType,
 		choicePeriod,
+		searchWord,
 	]);
 
 	//インナーブロックのひな型を用意
@@ -597,17 +620,22 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 									className: "field_date",
 									headingContent: format("Y.n.j", post.date),
 							  }
-							: element_field === "featured_media" &&
+							: //メディアライブラリのIDが設定されていない場合
+							element_field === "featured_media" &&
+							  (!post._embedded["wp:featuredmedia"] ||
+									post._embedded["wp:featuredmedia"][0].id == null)
+							? {
+									className: "itmar_ex_block field_featured_media",
+									url: `${post_blocks.plugin_url}/assets/no-image.png`,
+									id: null,
+							  }
+							: //メディアライブラリのIDが設定されている場合
+							element_field === "featured_media" &&
 							  post._embedded["wp:featuredmedia"][0].id
 							? {
 									className: "itmar_ex_block field_featured_media",
 									id: post._embedded["wp:featuredmedia"][0].id,
-							  }
-							: element_field === "featured_media" &&
-							  !post._embedded["wp:featuredmedia"][0].id
-							? {
-									className: "itmar_ex_block field_featured_media",
-									url: `${post_blocks.plugin_url}/assets/no-image.png`,
+									url: null,
 							  }
 							: element_field === "excerpt"
 							? {
@@ -647,9 +675,17 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 								};
 								break;
 							case "core/image":
+								//メディアライブラリのIDが設定されている場合とそうでない場合でノーイメージの画像を表示
+								const setSource = costumFieldValue
+									? { id: costumFieldValue, url: null }
+									: {
+											id: null,
+											url: `${post_blocks.plugin_url}/assets/no-image.png`,
+									  };
+
 								blockAttributes = {
 									className: `itmar_ex_block field_${element_field}`,
-									id: costumFieldValue,
+									...setSource,
 								};
 								break;
 							default:
@@ -668,7 +704,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 						blockAttributes,
 						diffIdFlg,
 					);
-
 					if (!is_field) {
 						//登録されていなければinnerBlocksAttributesにフィールド用ブロックを追加
 						const blockname = blockMap[field] || "itmar/design-title";
@@ -780,6 +815,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 
 			//RestAPIのエンドポイントを生成
 			const path = `/wp/v2/${selectedRest}/${unitAttribute.attributes.blockNum}`;
+
 			// リクエストオプション
 			const options = {
 				method: "PUT",
@@ -792,7 +828,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					acf: acfFields,
 				}),
 			};
-			//console.log(options);
+
 			//APIリクエストを送信
 			apiFetch({ path: path, ...options })
 				.then((response) => {
