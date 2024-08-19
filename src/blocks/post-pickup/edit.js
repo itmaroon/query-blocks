@@ -400,6 +400,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		choiceFields,
 		choicePeriod,
 		searchWord,
+		searchFields,
 		numberOfItems,
 		numberOfTotal,
 		currentPage,
@@ -413,25 +414,12 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	//choiseTerms属性からクエリー用の配列を生成
 	const getSelectedTaxonomyTerms = () => {
 		const taxonomyTerms = choiceTerms.reduce((acc, { taxonomy, term }) => {
-			if (taxonomy === "category") {
-				if (acc.hasOwnProperty("categories")) {
-					acc["categories"] = `${acc["categories"]},${term.id}`;
-				} else {
-					acc["categories"] = term.id;
-				}
-			} else if (taxonomy === "post_tag") {
-				if (acc.hasOwnProperty("tags")) {
-					acc["tags"] = `${acc["tags"]},${term.id}`;
-				} else {
-					acc["tags"] = term.id;
-				}
+			if (acc.hasOwnProperty(taxonomy)) {
+				acc[taxonomy] = `${acc[taxonomy]},${term.id}`;
 			} else {
-				if (acc.hasOwnProperty(taxonomy)) {
-					acc[taxonomy] = `${acc[taxonomy]},${term.id}`;
-				} else {
-					acc[taxonomy] = term.id;
-				}
+				acc[taxonomy] = term.id;
 			}
+
 			return acc;
 		}, {});
 
@@ -443,14 +431,21 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 
 	//RestAPIでpostを取得する
 	const [posts, setPosts] = useState([]);
-	const fetchSearch = async (term) => {
+	const fetchSearch = async (
+		keyWord,
+		taxonomyTerms,
+		periodObj,
+		searchFields,
+	) => {
 		const query = {
-			search: term,
+			search: keyWord,
+			search_fields: searchFields,
 			post_type: selectedSlug,
 			per_page: numberOfItems,
 			page: currentPage + 1,
+			...taxonomyTerms,
+			...periodObj,
 		};
-
 		const queryString = new URLSearchParams(query).toString();
 
 		try {
@@ -507,7 +502,13 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	};
 	useEffect(() => {
 		//fetchPosts();
-		fetchSearch(searchWord);
+
+		fetchSearch(
+			searchWord,
+			getSelectedTaxonomyTerms(),
+			getPeriodQuery(choicePeriod),
+			searchFields,
+		);
 	}, [
 		numberOfItems,
 		currentPage,
@@ -516,6 +517,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		taxRelateType,
 		choicePeriod,
 		searchWord,
+		searchFields,
 	]);
 
 	//インナーブロックのひな型を用意
@@ -620,21 +622,35 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 									className: "field_date",
 									headingContent: format("Y.n.j", post.date),
 							  }
-							: //メディアライブラリのIDが設定されていない場合
-							element_field === "featured_media" &&
-							  (!post._embedded["wp:featuredmedia"] ||
-									post._embedded["wp:featuredmedia"][0].id == null)
+							: // : //メディアライブラリのIDが設定されていない場合
+							// element_field === "featured_media" &&
+							//   (!post._embedded["wp:featuredmedia"] ||
+							// 		post._embedded["wp:featuredmedia"][0].id == null)
+							// ? {
+							// 		className: "itmar_ex_block field_featured_media",
+							// 		url: `${post_blocks.plugin_url}/assets/no-image.png`,
+							// 		id: null,
+							//   }
+							// : //メディアライブラリのIDが設定されている場合
+							// element_field === "featured_media" &&
+							//   post._embedded["wp:featuredmedia"][0].id
+							// ? {
+							// 		className: "itmar_ex_block field_featured_media",
+							// 		id: post._embedded["wp:featuredmedia"][0].id,
+							// 		url: null,
+							//   }
+							//メディアライブラリのIDが設定されていない場合
+							element_field === "featured_media" && post.featured_media == 0
 							? {
 									className: "itmar_ex_block field_featured_media",
 									url: `${post_blocks.plugin_url}/assets/no-image.png`,
 									id: null,
 							  }
 							: //メディアライブラリのIDが設定されている場合
-							element_field === "featured_media" &&
-							  post._embedded["wp:featuredmedia"][0].id
+							element_field === "featured_media" && post.featured_media != 0
 							? {
 									className: "itmar_ex_block field_featured_media",
-									id: post._embedded["wp:featuredmedia"][0].id,
+									id: post.featured_media,
 									url: null,
 							  }
 							: element_field === "excerpt"

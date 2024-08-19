@@ -18,6 +18,10 @@
 			"type":"array",
 			"default":["search","date"]
 		},
+		"searchFields":{
+			"type": "array",
+			"default": []
+		},
 		"dateOption":{
 			"type":"string",
 			"default":"month"

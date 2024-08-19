@@ -99,6 +99,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	const {
 		selectedBlockId,
 		setFilters,
+		searchFields,
 		taxRelate,
 		dateOption,
 		dateSpan,
@@ -159,7 +160,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		);
 	}, [targetBlocks]);
 
-	//インナーブロック内の検索用ボタン
+	//インナーブロック内の検索用インプットボックス
 	const searchBox = useMemo(() => {
 		return innerFlattenedBlocks.find(
 			(block) =>
@@ -226,7 +227,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 							terms: res.terms,
 						};
 					});
-					//一旦
+					//一旦タームのついたフィルタ要素は削除
 					const removeTax = filterItems.filter(
 						(item) => !item.hasOwnProperty("terms"),
 					);
@@ -250,8 +251,9 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			if (setFilters.includes(filterItem.value)) {
 				//タイトルの属性
 				const setTitleAttributes = {
-					...titleAttributes,
+					//クラス名は既存のものに上書き、タイトルは独自のもので上書き
 					className: "itmar_filter_title",
+					...titleAttributes,
 					headingContent: filterItem.label,
 				};
 
@@ -267,7 +269,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					//インプットボックスの属性
 					const searchInput = createBlock("itmar/design-text-ctrl", {
 						className: "itmar_filter_searchbox",
-						...searchBoxAttributes,
+						...searchBoxAttributes, //既存属性にクラス名があるときは上書き
 					});
 					const searchButton = createBlock("itmar/design-button", {
 						className: "itmar_filter_searchbutton",
@@ -391,27 +393,29 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			//グループブロックの属性を記録
 			setAttributes({ groupBlockAttributes: innerBlocks[0].attributes });
 			//最初に見つかったitmar_filter_titleブロック
-			const titleBolck = allFlattenedBlocks.find(
+
+			const titleBolck = innerFlattenedBlocks.find(
 				(block) =>
 					block.name === "itmar/design-title" &&
-					block.attributes.className === "itmar_filter_title",
+					block.attributes.className.includes("itmar_filter_title"),
 			);
+
 			//タイトルブロックの属性を記録
 			if (titleBolck) {
 				setAttributes({ titleAttributes: titleBolck.attributes });
 			}
 
 			//最初に見つかったitmar_filter_searchboxブロック
-			const searchBoxBolck = allFlattenedBlocks.find(
+			const searchBoxBolck = innerFlattenedBlocks.find(
 				(block) =>
 					block.name === "itmar/design-text-ctrl" &&
-					block.attributes.className === "itmar_filter_searchbox",
+					block.attributes.className?.includes("itmar_filter_searchbox"),
 			);
 			//属性を記録
 			if (searchBoxBolck) {
 				setAttributes({ searchBoxAttributes: searchBoxBolck.attributes });
 			}
-			//最初に見つかったitmar_filter_searchboxブロック
+			//最初に見つかったitmar_filter_searchbuttonブロック
 			const searchButtonBolck = allFlattenedBlocks.find(
 				(block) =>
 					block.name === "itmar/design-button" &&
@@ -533,16 +537,71 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				});
 				//検索キーワードをpickupの属性にセット
 				const keyWord = searchBox.attributes.inputValue;
-				console.log(keyWord);
 				updateBlockAttributes(pickup.clientId, {
 					searchWord: keyWord,
 					currentPage: 0, //カレントページも０にもどす
 				});
 			}
 		}
-	}, [checkboxBlocks, periodBlocks, pickup, filterItems, searchButton]);
+		//検索対象のカスタムフィールド
+		if (searchFields) {
+			//検索対象のカスタムフィールドをpickupの属性にセット
+			updateBlockAttributes(pickup.clientId, {
+				searchFields: searchFields,
+			});
+		}
+	}, [
+		checkboxBlocks,
+		periodBlocks,
+		pickup,
+		filterItems,
+		searchButton,
+		searchFields,
+	]);
 
+	//今日の日付
 	const today = new Date();
+
+	//フィルタ要素をタクソノミーのフィルタと、日付・検索のフィルタに分離
+	const taxFilters = filterItems.filter(
+		(filter) => !["date", "search"].includes(filter.value),
+	);
+	const specialFilters = filterItems.filter((filter) =>
+		["date", "search"].includes(filter.value),
+	);
+
+	//フィルタの選択に使用するチェックボックス
+	const FilterCheckbox = ({ filter, isChecked }) => {
+		return (
+			<CheckboxControl
+				className="filter_check"
+				label={filter.label}
+				checked={isChecked}
+				onChange={(checked) => {
+					// targetが重複していない場合のみ追加
+					if (checked) {
+						if (!setFilters.some((item) => _.isEqual(item, filter.value))) {
+							setAttributes({
+								setFilters: [...setFilters, filter.value],
+							});
+						}
+					} else {
+						// targetを配列から削除
+						setAttributes({
+							setFilters: setFilters.filter(
+								(item) => !_.isEqual(item, filter.value),
+							),
+						});
+					}
+				}}
+			/>
+		);
+	};
+
+	//pickupで登録されたカスタムフィールド
+	const pickupCustomFields = pickup?.attributes.blockMap;
+	//カスタムキーでないフィールド
+	const excludedKeys = ["title", "date", "excerpt"];
 
 	return (
 		<>
@@ -572,39 +631,72 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					initialOpen={true}
 					className="form_setteing_ctrl"
 				>
-					{filterItems.map((filter, index) => {
+					{specialFilters.map((filter, index) => {
 						const isChecked = setFilters.some(
 							(setFilter) => setFilter === filter.value,
 						);
+						//フィルタ用パネルのラベル
+						const panel_label =
+							filter.value === "date"
+								? __("Date filter Setting", "post-blocks")
+								: filter.value === "search"
+								? __("Search filter Setting", "post-blocks")
+								: "";
 						return (
-							<div key={index}>
-								<CheckboxControl
-									className="filter_check"
-									key={index}
-									label={filter.label}
-									checked={isChecked}
-									onChange={(checked) => {
-										if (checked) {
-											// targetが重複していない場合のみ追加
-											if (
-												!setFilters.some((item) =>
-													_.isEqual(item, filter.value),
-												)
-											) {
-												setAttributes({
-													setFilters: [...setFilters, filter.value],
-												});
-											}
-										} else {
-											// targetを配列から削除
-											setAttributes({
-												setFilters: setFilters.filter(
-													(item) => !_.isEqual(item, filter.value),
-												),
-											});
-										}
-									}}
-								/>
+							<PanelBody
+								key={index}
+								title={panel_label}
+								initialOpen={true}
+								className="form_setteing_ctrl"
+							>
+								<FilterCheckbox filter={filter} isChecked={isChecked} />
+								{filter.value === "search" &&
+									isChecked &&
+									Object.keys(pickupCustomFields).length > 0 && (
+										<PanelBody
+											title={__("Custom fields to select", "post-blocks")}
+											initialOpen={true}
+											className="form_setteing_ctrl"
+										>
+											{Object.entries(pickupCustomFields).map(
+												([key, value]) => {
+													const isChecked = searchFields.some(
+														(searchField) => searchField === key,
+													);
+													return !excludedKeys.includes(key) &&
+														(value === "itmar/design-title" ||
+															value === "core/paragraph") ? (
+														<CheckboxControl
+															key={key}
+															label={key}
+															checked={isChecked}
+															onChange={(checked) => {
+																// targetが重複していない場合のみ追加
+																if (checked) {
+																	if (
+																		!searchFields.some((item) =>
+																			_.isEqual(item, key),
+																		)
+																	) {
+																		setAttributes({
+																			searchFields: [...searchFields, key],
+																		});
+																	}
+																} else {
+																	// targetを配列から削除
+																	setAttributes({
+																		searchFields: searchFields.filter(
+																			(item) => !_.isEqual(item, key),
+																		),
+																	});
+																}
+															}}
+														/>
+													) : null;
+												},
+											)}
+										</PanelBody>
+									)}
 								{filter.value === "date" && isChecked && (
 									<div className="itmar_position_row">
 										<RadioControl
@@ -734,9 +826,28 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 											</PanelRow>
 										</>
 									)}
-							</div>
+							</PanelBody>
 						);
 					})}
+					<PanelBody
+						title={__("Taxonomy Setting", "post-blocks")}
+						initialOpen={true}
+						className="form_setteing_ctrl"
+					>
+						{taxFilters.map((filter, index) => {
+							const isChecked = setFilters.some(
+								(setFilter) => setFilter === filter.value,
+							);
+
+							return (
+								<FilterCheckbox
+									key={index}
+									filter={filter}
+									isChecked={isChecked}
+								/>
+							);
+						})}
+					</PanelBody>
 				</PanelBody>
 			</InspectorControls>
 

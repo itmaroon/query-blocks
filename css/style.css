@@ -6,6 +6,7 @@
  */
 .wp-block-itmar-post-filter {
   box-sizing: border-box;
+  width: 100%;
 }
 .wp-block-itmar-post-filter input[type=text] {
   width: 100%;

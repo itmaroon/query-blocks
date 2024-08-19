@@ -53,6 +53,10 @@
       "type": "string",
       "default": ""
     },
+    "searchFields": {
+      "type": "array",
+      "default": []
+    },
     "blockMap": {
       "type": "object",
       "default": {

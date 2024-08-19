@@ -16,6 +16,8 @@ const promises = [];
 let termQueryObj = [];
 //期間のオブジェクトを格納する変数
 let periodQueryObj = {};
+//キーワードを格納する変数
+let searchKeyWord = "";
 
 const getBlockMapValue = (blockMap, fieldName) => {
 	//blockMapのキーが.で区切られている場合は、最後の.の後の文字列から
@@ -52,13 +54,20 @@ const searchFieldObjects = (obj, fieldKey) => {
 };
 
 //RestAPIで投稿データを取得する関数（Promiseを返す）
-const getEntityRecordsFromAPI = (entity, query) => {
-	const path = `/wp/v2/${entity}`;
-	const queryString = Object.entries(query)
-		.map(([key, value]) => `${key}=${value}`)
-		.join("&");
+const getSearchRecordsFromAPI = async (query) => {
+	const queryString = new URLSearchParams(query).toString();
 
-	return apiFetch({ path: `${path}?${queryString}` });
+	try {
+		const response = await fetch(
+			`${post_blocks.home_url}/wp-json/itmar-rest-api/v1/search?${queryString}`,
+		);
+		const data = await response.json();
+		return data;
+
+		// データの処理
+	} catch (error) {
+		console.error("Failed to fetch posts:", error);
+	}
 };
 
 //RestAPIでメディア情報を取得する関数（Promiseを返す）
@@ -70,25 +79,12 @@ const getMediaInfoFromAPI = async (mediaId) => {
 
 const getSelectedTaxonomyTerms = (choiceTerms, taxRelateType) => {
 	const taxonomyTerms = choiceTerms.reduce((acc, { taxonomy, term }) => {
-		if (taxonomy === "category") {
-			if (acc.hasOwnProperty("categories")) {
-				acc["categories"] = `${acc["categories"]},${term.id}`;
-			} else {
-				acc["categories"] = term.id;
-			}
-		} else if (taxonomy === "post_tag") {
-			if (acc.hasOwnProperty("tags")) {
-				acc["tags"] = `${acc["tags"]},${term.id}`;
-			} else {
-				acc["tags"] = term.id;
-			}
+		if (acc.hasOwnProperty(taxonomy)) {
+			acc[taxonomy] = `${acc[taxonomy]},${term.id}`;
 		} else {
-			if (acc.hasOwnProperty(taxonomy)) {
-				acc[taxonomy] = `${acc[taxonomy]},${term.id}`;
-			} else {
-				acc[taxonomy] = term.id;
-			}
+			acc[taxonomy] = term.id;
 		}
+
 		return acc;
 	}, {});
 
@@ -205,7 +201,7 @@ const ModifyFieldElement = (element, post, blockMap) => {
 								})
 								.catch((error) => {
 									//画像が見つからない場合の処理
-									if (error.data.status == 404) {
+									if (error.data?.status == 404) {
 										iElement.classList.remove(`wp-image-${currentMediaId}`);
 										iElement.classList.add("wp-image-000");
 										iElement.removeAttribute("srcset");
@@ -223,39 +219,47 @@ const ModifyFieldElement = (element, post, blockMap) => {
 	}
 };
 
-//ページネーションの処理
+//ピックアップ投稿の表示・ページネーションの処理
 const pageChange = (pickup, currentPage) => {
 	const pickupId = pickup.dataset.pickup_id;
 	const numberOfItems = pickup.dataset.number_of_items;
-	const selectedRest = pickup.dataset.selected_rest;
+	//const selectedRest = pickup.dataset.selected_rest;
+	const selectedSlug = pickup.dataset.selected_slug;
 	const taxRelateType = pickup.dataset.tax_relate_type;
+	const searchFields = JSON.parse(pickup.dataset.search_fields);
 	//const choiceTerms = JSON.parse(pickup.dataset.choice_terms);
-
 	const blockMap = JSON.parse(pickup.dataset.block_map);
 
 	//タームのセレクトオブジェクト
 	const selectTerms = getSelectedTaxonomyTerms(termQueryObj, taxRelateType);
 
-	//RestAPIで結果を取得
-	getEntityRecordsFromAPI(selectedRest, {
+	//全体のクエリオブジェクト
+	const query = {
+		search: searchKeyWord,
+		search_fields: searchFields,
+		post_type: selectedSlug,
 		per_page: numberOfItems,
 		page: currentPage + 1,
-		_embed: true,
 		...selectTerms,
 		...periodQueryObj,
-	})
+	};
+
+	//カスタムエンドポイントから投稿データを取得
+	getSearchRecordsFromAPI(query)
 		.then((data) => {
+			console.log(data);
+			const posts = data.posts;
 			const postUnits = pickup.querySelectorAll(".post_unit")[0];
 			if (!postUnits) return; //post_unitクラスの要素がなければリターン
 
 			const postDivs = postUnits.children;
 			const divElements = Array.from(postDivs);
 			divElements.forEach((divs, index) => {
-				if (!data[index]) {
+				if (!posts[index]) {
 					divs.style.display = "none"; // 要素を非表示にする
 				} else {
 					//レンダリング指定のあるフィールドの内容をpostの内容によって書き換え
-					ModifyFieldElement(divs, data[index], blockMap);
+					ModifyFieldElement(divs, posts[index], blockMap);
 					divs.style.display = "block"; // 要素を再表示する
 				}
 			});
@@ -269,23 +273,14 @@ const pageChange = (pickup, currentPage) => {
 					});
 				})
 				.catch((error) => console.error(error));
-		})
-		.catch((error) => console.error(error));
-	//ページネーションのレンダリング
-	const pagenationRoot = document.getElementById(`page_${pickupId}`);
 
-	if (pagenationRoot && pagenationRoot.dataset.group_attributes) {
-		const pagention = createRoot(pagenationRoot); //ページネーションのルート要素
+			//ページネーションのレンダリング
+			const pagenationRoot = document.getElementById(`page_${pickupId}`);
 
-		//RestAPIで投稿の総数を取得
-		getEntityRecordsFromAPI(selectedRest, {
-			per_page: -1,
-			...selectTerms,
-			...periodQueryObj,
-		})
-			.then((data) => {
+			if (pagenationRoot && pagenationRoot.dataset.group_attributes) {
+				const pagention = createRoot(pagenationRoot); //ページネーションのルート要素
 				//トータルのページ数を算出
-				const totalPages = Math.ceil(data.length / numberOfItems);
+				const totalPages = Math.ceil(data.total / numberOfItems);
 
 				//totalPagesが２ページ以上
 				if (totalPages > 1) {
@@ -429,9 +424,9 @@ const pageChange = (pickup, currentPage) => {
 						/>,
 					);
 				}
-			})
-			.catch((error) => console.error(error));
-	}
+			}
+		})
+		.catch((error) => console.error(error));
 };
 
 //documentの読み込み後に処理
@@ -580,5 +575,36 @@ document.addEventListener("DOMContentLoaded", () => {
 			.catch((error) => {
 				console.error("投稿の更新に失敗しました", error);
 			});
+		//キーワード検索のインプットボックスとボタンを取得
+		const searchButton = document.querySelector(
+			".itmar_filter_searchbutton button",
+		);
+		searchButton.addEventListener("click", function () {
+			// クリックされたボタンの3代上の親要素を取得
+			const greatGrandparent = this.parentElement.parentElement.parentElement;
+
+			// 3代上の親要素の兄弟要素を取得
+			const siblings = [...greatGrandparent.parentElement.children].filter(
+				(el) => el !== greatGrandparent,
+			);
+			// 兄弟要素内の.itmar_filter_searchboxを持つ要素を検索
+			const siblingWithSearchBox = siblings.find((sibling) =>
+				sibling.querySelector(".itmar_filter_searchbox"),
+			);
+
+			if (siblingWithSearchBox) {
+				const searchBox = siblingWithSearchBox.querySelector(
+					".itmar_filter_searchbox",
+				);
+				// .itmar_filter_searchbox内のtext型input要素を検索
+				const inputElement = searchBox.querySelector('input[type="text"]');
+
+				if (inputElement) {
+					// input要素の値を取得してグロバール変数に保存
+					searchKeyWord = inputElement.value;
+					pageChange(pickup, 0); //表示ページの変更
+				}
+			}
+		});
 	}
 });

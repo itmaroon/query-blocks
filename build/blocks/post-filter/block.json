@@ -21,6 +21,10 @@
         "date"
       ]
     },
+    "searchFields": {
+      "type": "array",
+      "default": []
+    },
     "dateOption": {
       "type": "string",
       "default": "month"

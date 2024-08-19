@@ -4,6 +4,7 @@ export default function save({ attributes }) {
 	const {
 		pickupId,
 		numberOfItems,
+		searchFields,
 		selectedSlug,
 		selectedRest,
 		taxRelateType,
@@ -18,8 +19,9 @@ export default function save({ attributes }) {
 			data-number_of_items={numberOfItems}
 			data-selected_slug={selectedSlug}
 			data-selected_rest={selectedRest}
+			data-search_fields={JSON.stringify(searchFields)}
 			data-tax_relate_type={taxRelateType}
-			data-choice_terms={JSON.stringify(choiceTerms)}
+			// data-choice_terms={JSON.stringify(choiceTerms)}
 			data-block_map={JSON.stringify(blockMap)}
 		>
 			<div className="post_unit unit_hide">

@@ -72,36 +72,116 @@ add_action('rest_api_init', function () {
 
 function itmar_search_endpoint($request)
 {
+	global $wpdb;
+	//各種パラメータの取得
 	$search_term = $request->get_param('search');
 	$post_type = $request->get_param('post_type') ? $request->get_param('post_type') : 'post';
 	$per_page = $request->get_param('per_page') ? (int) $request->get_param('per_page') : 10;
 	$page = $request->get_param('page') ? (int) $request->get_param('page') : 1;
+	$tax_relation = $request->get_param('tax_relation') ? strtoupper($request->get_param('tax_relation')) : 'AND';
+	$after = $request->get_param('after');
+	$before = $request->get_param('before');
 
 	// カスタムフィールドの配列（検索対象にしたいフィールドを指定）
-	$custom_fields = array('custom_field_key', 'schedule');
+	$custom_fields_prm = $request->get_param('search_fields');
+	$custom_fields = array();
+	if ($custom_fields_prm != "") {
+		$custom_fields = explode(',', $custom_fields_prm);
+	}
 
 	$args = array(
 		'post_type' => $post_type,
 		'posts_per_page' => $per_page,
 		'paged' => $page,
 		'post_status' => 'publish',
-		's' => $search_term,
+		//'apply_custom_search_filter' => true
 	);
 
-	// メタクエリの作成
-	$meta_query = array('relation' => 'OR');
-	foreach ($custom_fields as $field) {
-		$meta_query[] = array(
-			'key' => $field,
-			'value' => $search_term,
-			'compare' => 'LIKE'
-		);
+	// 検索クエリの追加
+	if (!empty($search_term)) {
+		// タイトル、本文、抜粋の検索を追加
+		$args['s'] = $search_term;
+		// メタクエリの作成
+		if (count($custom_fields) > 0) {
+			$meta_query = array('relation' => 'OR');
+			foreach ($custom_fields as $field) {
+				$meta_query[] = array(
+					'key' => $field,
+					'value' =>  $search_term,
+					'compare' => 'LIKE'
+				);
+			}
+
+			$args['meta_query'] = $meta_query;
+			$args['apply_custom_search_filter'] = true; // カスタムフラグを追加
+		}
 	}
 
-	$args['meta_query'] = $meta_query;
+	// 日付範囲クエリの追加
+	$date_query = array();
+
+	if (!empty($after)) {
+		$date_query['after'] = $after;
+	}
+
+	if (!empty($before)) {
+		$date_query['before'] = $before;
+	}
+
+	if (!empty($date_query)) {
+		$args['date_query'] = $date_query;
+	}
+
+	// タクソノミーパラメータの取得
+	$taxonomy_params = array();
+	$registered_taxonomies = get_taxonomies(array('public' => true), 'names');
+	foreach ($registered_taxonomies as $taxonomy) {
+		$tax_value = $request->get_param($taxonomy);
+		if ($tax_value !== null) {
+			$taxonomy_params[$taxonomy] = $tax_value;
+		}
+	}
+
+	// タクソノミークエリの構築
+	$tax_query = array();
+	foreach ($taxonomy_params as $taxonomy => $terms) {
+		$terms_array = explode(',', $terms);
+		$field = 'term_id'; // デフォルトはterm_id
+
+		// タームの種類を判断
+		$first_term = trim($terms_array[0]);
+		if (!is_numeric($first_term)) {
+			// 数値でない場合はスラッグとして扱う
+			$field = 'slug';
+		} else {
+			// 数値の場合でも、実際にterm_idが存在するか確認
+			$term = get_term($first_term, $taxonomy);
+			if (!$term || is_wp_error($term)) {
+				// term_idが存在しない場合はスラッグとして扱う
+				$field = 'slug';
+			}
+		}
+
+		$tax_query[] = array(
+			'taxonomy' => $taxonomy,
+			'field' => $field,
+			'terms' => $terms_array,
+		);
+	}
+	//複数のタクソノミが設定されているときはその関係を設定
+	if (count($tax_query) > 1) {
+		$tax_query['relation'] = $tax_relation;
+	}
+
+	if (!empty($tax_query)) {
+		$args['tax_query'] = $tax_query;
+	}
+
+
 
 	// クエリの実行
 	$query = new WP_Query($args);
+	error_log(print_r($query, true));
 
 	$posts = array();
 	if ($query->have_posts()) {
@@ -141,6 +221,7 @@ function itmar_search_endpoint($request)
 				$post_data['meta'][$field] = get_post_meta($post_id, $field, true);
 			}
 
+
 			// ACFフィールドがある場合
 			if (function_exists('get_fields')) {
 				$acf_fields = get_fields($post_id);
@@ -163,4 +244,119 @@ function itmar_search_endpoint($request)
 	);
 
 	return new WP_REST_Response($response, 200);
+}
+
+// メタクエリとデフォルトの検索を結合するカスタムフィルター
+function itmar_combine_searches($sql, $query)
+{
+	global $wpdb;
+	// カスタムフラグをチェック
+	if ($query->get('apply_custom_search_filter')) {
+		$search_term = $query->get('s');
+
+		if (!empty($search_term)) {
+			$meta = $query->get('meta_query');
+			$target_custom_fields = itmar_extract_custom_fields($meta); // 検索対象のカスタムフィールド
+			if (count($target_custom_fields) > 0) {
+				// SQLクエリからWHERE句を抽出
+				preg_match('/WHERE\s+((?:(?!GROUP BY|ORDER BY|LIMIT).)+)/is', $sql, $matches);
+
+				if (isset($matches[1])) {
+					$where_clause = $matches[1];
+
+					// WHERE句を分割
+					$conditions = itmar_split_where_clause($where_clause);
+
+					// 新しい検索条件を構築
+					$search_conditions = array();
+					$search_conditions[] = $wpdb->prepare("(wp_posts.post_title LIKE %s)", '%' . $wpdb->esc_like($search_term) . '%');
+					$search_conditions[] = $wpdb->prepare("(wp_posts.post_excerpt LIKE %s)", '%' . $wpdb->esc_like($search_term) . '%');
+					$search_conditions[] = $wpdb->prepare("(wp_posts.post_content LIKE %s)", '%' . $wpdb->esc_like($search_term) . '%');
+
+					foreach ($target_custom_fields as $field) {
+						$search_conditions[] = $wpdb->prepare(
+							"(wp_postmeta.meta_key = %s AND wp_postmeta.meta_value LIKE %s)",
+							$field,
+							'%' . $wpdb->esc_like($search_term) . '%'
+						);
+					}
+
+					$new_search_condition = '(' . implode(' OR ', $search_conditions) . ')';
+
+					// 既存の検索条件を新しい条件に置き換え
+					$new_conditions = array();
+					foreach ($conditions as $condition) {
+						if (
+							strpos($condition, 'wp_posts.post_title LIKE') === false &&
+							strpos($condition, 'wp_posts.post_excerpt LIKE') === false &&
+							strpos($condition, 'wp_posts.post_content LIKE') === false &&
+							strpos($condition, 'wp_postmeta.meta_key =') === false
+						) {
+							$new_conditions[] = $condition;
+						}
+					}
+
+					// 新しい検索条件を追加
+					array_unshift($new_conditions, $new_search_condition);
+
+					// WHERE句を再構築
+					$new_where_clause = implode(' AND ', $new_conditions);
+
+					// 元のSQLクエリのWHERE句を新しいものに置き換え
+					$sql = preg_replace('/WHERE\s+(?:(?!GROUP BY|ORDER BY|LIMIT).)+/is', "WHERE $new_where_clause", $sql);
+				}
+			}
+		}
+	}
+	return $sql;
+}
+add_filter('posts_request', 'itmar_combine_searches', 10, 2);
+
+//WHERE句をANDごとに分割する関数（AND()ごとに分割）
+function itmar_split_where_clause($where_clause)
+{
+	$conditions = array();
+	$current_condition = '';
+	$paren_count = 0;
+	$tokens = preg_split('/(AND|\(|\))/', $where_clause, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
+
+	foreach ($tokens as $token) {
+		$token = trim($token);
+		if ($token === '(') {
+			$paren_count++;
+		} elseif ($token === ')') {
+			$paren_count--;
+		}
+
+		if ($token === 'AND' && $paren_count === 0) {
+			if (!empty($current_condition)) {
+				$conditions[] = trim($current_condition);
+				$current_condition = '';
+			}
+		} else {
+			$current_condition .= ' ' . $token;
+		}
+	}
+
+	if (!empty($current_condition)) {
+		$conditions[] = trim($current_condition);
+	}
+
+	return $conditions;
+}
+
+//カスタムフィールド名を配列として取り出し
+function itmar_extract_custom_fields($meta_query)
+{
+	$fields_array = array();
+	if (is_array($meta_query)) {
+		foreach ($meta_query as $query) {
+			if (isset($query['key'])) {
+				$fields_array[] = $query['key'];
+			} elseif (is_array($query)) {
+				$fields_array = array_merge($fields_array, itmar_extract_custom_fields($query));
+			}
+		}
+	}
+	return array_unique($fields_array);
 }
