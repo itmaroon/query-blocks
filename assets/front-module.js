@@ -1,9 +1,6 @@
 import apiFetch from "@wordpress/api-fetch";
 import { __ } from "@wordpress/i18n";
-import {
-	dateI18n, // 日付をフォーマットし、サイトのロケールに変換
-	format, // 日付のフォーマット
-} from "@wordpress/date";
+import { format, getSettings } from "@wordpress/date";
 
 import { StyleComp as StyleGroup } from "../../block-collections/src/blocks/design-group/StyleGroup";
 import { StyleComp as StyleButton } from "../../block-collections/src/blocks/design-button/StyleButton";
@@ -138,10 +135,16 @@ const ModifyFieldElement = (element, post, blockMap) => {
 					if (hElement) {
 						// h要素内のdivを探す
 						const divElement = hElement.querySelector("div");
+						//date_formatを取り出す
+						const dateFormat = element.getAttribute("data-date_format");
 						if (divElement) {
 							// divのテキストノードを書き換える
 							if (fieldName === "date") {
-								divElement.textContent = dateI18n("Y.n.j", fieldValue);
+								divElement.textContent = format(
+									dateFormat,
+									fieldValue,
+									getSettings(),
+								);
 							} else if (fieldName === "title") {
 								divElement.textContent = fieldValue.rendered;
 							} else {
@@ -152,8 +155,13 @@ const ModifyFieldElement = (element, post, blockMap) => {
 					break;
 
 				case "core/paragraph":
-					// pの内容を書き換える頻度
-					element.innerHTML = fieldValue.rendered;
+					// pの内容を書き換える
+					if (fieldName === "excerpt") {
+						element.innerHTML = fieldValue.rendered;
+					} else {
+						element.innerHTML = fieldValue;
+					}
+
 					break;
 				case "core/image":
 					const iElement = element.querySelector("img");

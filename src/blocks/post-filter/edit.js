@@ -267,9 +267,13 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				if (filterItem.value === "search") {
 					const searchBlocksArray = [];
 					//インプットボックスの属性
+					const defaultWord = pickup.attributes.searchWord
+						? { inputValue: pickup.attributes.searchWord }
+						: null;
 					const searchInput = createBlock("itmar/design-text-ctrl", {
 						className: "itmar_filter_searchbox",
-						...searchBoxAttributes, //既存属性にクラス名があるときは上書き
+						...searchBoxAttributes, //既存属性にクラス名があるときは上書きされる
+						...defaultWord, //既入力キーワードが残っている場合
 					});
 					const searchButton = createBlock("itmar/design-button", {
 						className: "itmar_filter_searchbutton",

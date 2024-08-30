@@ -72,7 +72,15 @@ const createNestedObject = (names, value) => {
 function mergeNestedObjects(target, source) {
 	for (let key in source) {
 		if (source.hasOwnProperty(key)) {
-			if (source[key] instanceof Object && !Array.isArray(source[key])) {
+			// RichTextの戻り値をオブジェクトとして持つ場合はそのままコピー
+			if (
+				source[key] &&
+				typeof source[key] === "object" &&
+				Object.getOwnPropertyNames(source[key]).length == 0
+			) {
+				// #eをキーとして持つオブジェクトはそのままコピー
+				target[key] = source[key];
+			} else if (source[key] instanceof Object && !Array.isArray(source[key])) {
 				target[key] = target[key] || {};
 				mergeNestedObjects(target[key], source[key]);
 			} else {
@@ -80,6 +88,7 @@ function mergeNestedObjects(target, source) {
 			}
 		}
 	}
+
 	return target;
 }
 
@@ -262,7 +271,6 @@ const FieldClassNameObj = (blockObject) => {
 				? blockObject.attributes.id
 				: "";
 
-		//console.log(blockObject.attributes.content);
 		return [{ fieldName: classNames[0], fieldValue: fieldValue }];
 	}
 };
@@ -344,7 +352,6 @@ const searchFieldObjects = (obj, fieldKey) => {
 //コピーした属性にブロックエディタ上の投稿内容を維持してマージする関数
 const mergeBlocks = (fieldArray, changeBlock) => {
 	if (!changeBlock) return null;
-
 	const { blockName, attributes, innerBlocks } = changeBlock;
 	// attributesをprocessedAttributesにコピー
 	const processedAttributes = { ...attributes };
@@ -358,7 +365,7 @@ const mergeBlocks = (fieldArray, changeBlock) => {
 			.find((cls) => cls.startsWith("field_"));
 
 	if (fieldClass) {
-		const fieldName = fieldClass.split("field_")[1];
+		const fieldName = fieldClass.replace(/^field_/, "");
 		const fieldValue = fieldArray.find(
 			(item) => item.fieldName === fieldName,
 		).fieldValue;
@@ -446,6 +453,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			...taxonomyTerms,
 			...periodObj,
 		};
+
 		const queryString = new URLSearchParams(query).toString();
 
 		try {
@@ -620,7 +628,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 							: element_field === "date"
 							? {
 									className: "field_date",
-									headingContent: format("Y.n.j", post.date),
+									headingContent: post.date,
 							  }
 							: // : //メディアライブラリのIDが設定されていない場合
 							// element_field === "featured_media" &&
@@ -795,6 +803,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 
 			//ブロックに記入された内容を取得
 			const fieldObjs = FieldClassNameObj(unitAttribute);
+
 			if (!fieldObjs) return; //入力フィールドがない場合は処理しない
 
 			// カスタムフィールドとその他のフィールドを分離

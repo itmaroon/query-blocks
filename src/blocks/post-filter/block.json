@@ -26,16 +26,6 @@
 			"type":"string",
 			"default":"month"
 		},
-		
-		"dateSpan":{
-			"type":"object",
-			"default":{
-				"startYear":2000,
-				"startMonth":1,
-				"endYear":2024,
-				"endMonth":1
-			}
-		},
 		"taxRelate":{
 			"type":"string",
 			"default":"or"
