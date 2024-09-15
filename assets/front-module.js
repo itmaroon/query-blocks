@@ -135,16 +135,24 @@ const ModifyFieldElement = (element, post, blockMap) => {
 					if (hElement) {
 						// h要素内のdivを探す
 						const divElement = hElement.querySelector("div");
-						//date_formatを取り出す
-						const dateFormat = element.getAttribute("data-date_format");
+						//titleTypeを取り出す
+						const titleType = element.getAttribute("data-title_type");
+
 						if (divElement) {
 							// divのテキストノードを書き換える
 							if (fieldName === "date") {
-								divElement.textContent = format(
-									dateFormat,
-									fieldValue,
-									getSettings(),
-								);
+								//デザインタイトルのタイトルタイプがdateならフォーマットをあてる
+								if (titleType === "date") {
+									//date_formatを取り出す
+									const dateFormat = element.getAttribute("data-date_format");
+									divElement.textContent = format(
+										dateFormat,
+										fieldValue,
+										getSettings(),
+									);
+								} else {
+									divElement.textContent = fieldValue;
+								}
 							} else if (fieldName === "title") {
 								divElement.textContent = fieldValue.rendered;
 							} else {

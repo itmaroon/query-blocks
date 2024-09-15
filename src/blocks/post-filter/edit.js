@@ -21,7 +21,11 @@ import { useEffect, useState, useMemo } from "@wordpress/element";
 import { useSelect, useDispatch } from "@wordpress/data";
 import { createBlock } from "@wordpress/blocks";
 
-import { useIsIframeMobile, restTaxonomies } from "itmar-block-packages";
+import {
+	useIsIframeMobile,
+	restTaxonomies,
+	useBlockAttributeChanges,
+} from "itmar-block-packages";
 import { nanoid } from "nanoid";
 
 //スペースのリセットバリュー
@@ -267,8 +271,8 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				if (filterItem.value === "search") {
 					const searchBlocksArray = [];
 					//インプットボックスの属性
-					const defaultWord = pickup.attributes.searchWord
-						? { inputValue: pickup.attributes.searchWord }
+					const defaultWord = pickup?.attributes.searchWord
+						? { inputValue: pickup?.attributes.searchWord }
 						: null;
 					const searchInput = createBlock("itmar/design-text-ctrl", {
 						className: "itmar_filter_searchbox",
@@ -347,7 +351,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				if (filterItem.terms) {
 					filterItem.terms.forEach((term) => {
 						//チェックボックスの属性
-						const isTermCheck = pickup.attributes.choiceTerms.some(
+						const isTermCheck = pickup?.attributes.choiceTerms.some(
 							(choiceTerm) =>
 								choiceTerm.term && choiceTerm.term.slug === term.slug,
 						); //pickupがタームをチェックしているかの判定
@@ -392,22 +396,27 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	}, [filterItems, setFilters, dateOption, dateSpan]);
 
 	//innerBlocksの属性変更
+	//特定のブロックで属性が変更されたときの変更後の属性を取得する（コンテントは除く）
+	const changeTitleAttr = useBlockAttributeChanges(
+		clientId,
+		"itmar/design-title",
+		"itmar_filter_title",
+		innerFlattenedBlocks,
+		{ headingContent: "" },
+	);
+	console.log(changeTitleAttr);
+
+	useEffect(() => {
+		if (changeTitleAttr) {
+			setAttributes({ titleAttributes: changeTitleAttr.attributes });
+			//console.log(JSON.stringify(changeTitleAttr.attributes));
+		}
+	}, [changeTitleAttr]);
+
 	useEffect(() => {
 		if (innerBlocks[0]) {
 			//グループブロックの属性を記録
 			setAttributes({ groupBlockAttributes: innerBlocks[0].attributes });
-			//最初に見つかったitmar_filter_titleブロック
-
-			const titleBolck = innerFlattenedBlocks.find(
-				(block) =>
-					block.name === "itmar/design-title" &&
-					block.attributes.className.includes("itmar_filter_title"),
-			);
-
-			//タイトルブロックの属性を記録
-			if (titleBolck) {
-				setAttributes({ titleAttributes: titleBolck.attributes });
-			}
 
 			//最初に見つかったitmar_filter_searchboxブロック
 			const searchBoxBolck = innerFlattenedBlocks.find(
@@ -504,10 +513,10 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 
 			//タクソノミーの選択に変化があるときだけ属性を変更(タクソノミー情報取得後)
 			if (
-				!_.isEqual(selTerms, pickup.attributes.choiceTerms) &&
+				!_.isEqual(selTerms, pickup?.attributes.choiceTerms) &&
 				isfilterReady
 			) {
-				updateBlockAttributes(pickup.clientId, {
+				updateBlockAttributes(pickup?.clientId, {
 					choiceTerms: selTerms,
 					currentPage: 0, //カレントページも０にもどす
 				});
@@ -656,6 +665,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 								<FilterCheckbox filter={filter} isChecked={isChecked} />
 								{filter.value === "search" &&
 									isChecked &&
+									pickupCustomFields &&
 									Object.keys(pickupCustomFields).length > 0 && (
 										<PanelBody
 											title={__("Custom fields to select", "post-blocks")}

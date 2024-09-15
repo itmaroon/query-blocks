@@ -3,10 +3,6 @@ import { store as editorStore } from "@wordpress/editor";
 
 import { __ } from "@wordpress/i18n";
 
-import {
-	dateI18n, // 日付をフォーマットし、サイトのロケールに変換
-	format, // 日付のフォーマット
-} from "@wordpress/date";
 import "./editor.scss";
 import apiFetch from "@wordpress/api-fetch";
 import {
@@ -252,12 +248,11 @@ const FieldClassNameObj = (blockObject) => {
 
 	// 抽出したクラス名から"field_"を取り除く
 	const classNames = fieldClasses.map((cls) => cls.replace("field_", ""));
-
 	// innerBlocksが存在する場合は、再帰的に探索
 	if (blockObject.innerBlocks && blockObject.innerBlocks.length > 0) {
-		const innerClassNames = blockObject.innerBlocks.flatMap((innerBlock) =>
-			FieldClassNameObj(innerBlock),
-		);
+		const innerClassNames = blockObject.innerBlocks.flatMap((innerBlock) => {
+			return FieldClassNameObj(innerBlock);
+		});
 		return [...classNames, ...innerClassNames];
 	}
 	// classNamesが空配列ではない場合、classNamesの最初の要素とblockObjectをペアにしたオブジェクトを要素とする配列を返す
@@ -270,8 +265,9 @@ const FieldClassNameObj = (blockObject) => {
 				: blockObject.blockName === "core/image"
 				? blockObject.attributes.id
 				: "";
-
 		return [{ fieldName: classNames[0], fieldValue: fieldValue }];
+	} else {
+		return [];
 	}
 };
 
@@ -803,7 +799,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 
 			//ブロックに記入された内容を取得
 			const fieldObjs = FieldClassNameObj(unitAttribute);
-
 			if (!fieldObjs) return; //入力フィールドがない場合は処理しない
 
 			// カスタムフィールドとその他のフィールドを分離

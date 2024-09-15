@@ -252,6 +252,44 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			if (totalPages > 1) {
 				//ボタンの配列
 				const innerBlocksArray = [];
+				//デフォルトの共通ボタン形状
+				const commonDefStyle = {
+					default_pos: {
+						width: "3em",
+						height: "3em",
+						margin_value: {
+							top: "10px",
+							left: "10px",
+							bottom: "10px",
+							right: "10px",
+						},
+						padding_value: {
+							top: "10px",
+							left: "10px",
+							bottom: "10px",
+							right: "10px",
+						},
+					},
+					mobile_pos: {
+						width: "2em",
+						height: "2em",
+						margin_value: {
+							top: "10px",
+							left: "0",
+							bottom: "10px",
+							right: "0",
+						},
+						padding_value: {
+							top: "10px",
+							left: "10px",
+							bottom: "10px",
+							right: "10px",
+						},
+					},
+					radius_value: {
+						value: "50%",
+					},
+				};
 				//ダミーボタンの表示フラグ
 				let dummyFlg = false;
 				//ページ数分ボタンを生成
@@ -282,8 +320,11 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					) {
 						//表示ページが最終ページの一つより前か、最終ページの時
 						const setNumAttributes = {
-							...numBlockAttributes,
 							className: "itmar_design_number_btn",
+							align: "center",
+							...commonDefStyle,
+							disableButtonColor: "var(--wp--preset--color--placeholder)",
+							...numBlockAttributes, //ユーザー設定を優先
 							labelContent: String(index + 1),
 							disabled: currentPage === index, //currentPageとindexが一致したらdisabledをオン
 						};
@@ -295,9 +336,12 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 						if (!dummyFlg) {
 							//ダミーをプッシュしていないとき
 							const setDummyAttributes = {
-								...dummyBlockAttributes,
 								className: "itmar_design_dummy_btn",
 								labelContent: "...",
+								align: "center",
+								...commonDefStyle,
+								disableButtonColor: "var(--wp--preset--color--background)",
+								...dummyBlockAttributes, //ユーザー設定を優先
 								disabled: true, //disabledをオン
 							};
 							innerBlocksArray.push(
@@ -310,20 +354,22 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				//矢印用ボタンを挿入
 				if (isArrowButton) {
 					const setPrevAttributes = {
-						...forwardBlockAttributes,
 						className: "itmar_design_prev_btn",
 						displayType: "pseudo",
 						pseudoInfo: { element: "Arrow", option: "right" },
+						...commonDefStyle,
+						...forwardBlockAttributes, //ユーザー設定が最優先
 					};
 					const forwardButton = createBlock(
 						"itmar/design-button",
 						setPrevAttributes,
 					);
 					const setBackAttributes = {
-						...backBlockAttributes,
 						className: "itmar_design_back_btn",
 						displayType: "pseudo",
 						pseudoInfo: { element: "Arrow", option: "left" },
+						...commonDefStyle,
+						...backBlockAttributes, //ユーザー設定が最優先
 					};
 					const backButton = createBlock(
 						"itmar/design-button",
