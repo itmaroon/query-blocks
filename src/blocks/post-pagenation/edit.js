@@ -17,7 +17,10 @@ import { useEffect, useState, useCallback } from "@wordpress/element";
 import { useSelect, useDispatch } from "@wordpress/data";
 import { createBlock } from "@wordpress/blocks";
 
-import { useIsIframeMobile } from "itmar-block-packages";
+import {
+	useIsIframeMobile,
+	useBlockAttributeChanges,
+} from "itmar-block-packages";
 
 //スペースのリセットバリュー
 const padding_resetValues = {
@@ -113,6 +116,21 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	//ボタンがクリックされたときの判定フラグ
 	const [allIsClickFalse, setAllIsClickFalse] = useState(true);
 	//design-blockの属性変更（クリックを含む)
+
+	//他のブロックに属性の変更を適用
+	useBlockAttributeChanges(
+		clientId,
+		"itmar/design-button",
+		"itmar_design_number_btn",
+		{ labelContent: "", disabled: false },
+	);
+	useBlockAttributeChanges(
+		clientId,
+		"itmar/design-button",
+		"itmar_design_dummy_btn",
+		{ labelContent: "", disabled: false },
+	);
+
 	useEffect(() => {
 		if (innerBlocks[0] && innerBlocks[0].innerBlocks.length > 0) {
 			//インナーブロックのレンダリング後
@@ -142,6 +160,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			});
 		}
 	}, [innerBlocks[0], innerBlocks[0]?.innerBlocks]);
+
 	//ページの変更（ボタンクリックによる属性更新の副作用）
 	//トータルの投稿数と表示数を取得
 	const [currentPage, setCurrentPage] = useState(0);

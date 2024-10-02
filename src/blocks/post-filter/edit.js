@@ -9,9 +9,7 @@ import {
 import {
 	PanelBody,
 	PanelRow,
-	ToggleControl,
 	SelectControl,
-	RangeControl,
 	RadioControl,
 	CheckboxControl,
 	__experimentalNumberControl as NumberControl,
@@ -21,11 +19,7 @@ import { useEffect, useState, useMemo } from "@wordpress/element";
 import { useSelect, useDispatch } from "@wordpress/data";
 import { createBlock } from "@wordpress/blocks";
 
-import {
-	useIsIframeMobile,
-	restTaxonomies,
-	useBlockAttributeChanges,
-} from "itmar-block-packages";
+import { restTaxonomies, useBlockAttributeChanges } from "itmar-block-packages";
 import { nanoid } from "nanoid";
 
 //スペースのリセットバリュー
@@ -108,6 +102,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		dateOption,
 		dateSpan,
 		groupBlockAttributes,
+		filterGroupAttributes,
 		titleAttributes,
 		groupSearchAttributes,
 		searchBoxAttributes,
@@ -135,9 +130,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		template: TEMPLATE,
 		templateLock: false,
 	});
-
-	//モバイルの判定
-	const isMobile = useIsIframeMobile();
 
 	//エディタ内ブロックの取得
 	const { targetBlocks, innerBlocks } = useSelect(
@@ -374,8 +366,8 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				const filterGroup = createBlock(
 					"itmar/design-group",
 					{
-						className: filterItem.value,
-						...groupBlockAttributes, //既にグループがある場合はその属性を引き継ぐ
+						className: `itmar_filterItem_group ${filterItem.value}`,
+						...filterGroupAttributes, //既にグループがある場合はその属性を引き継ぐ
 					},
 					filterBlocksArray,
 				);
@@ -395,28 +387,53 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		replaceInnerBlocks(clientId, newInnerBlocks, false);
 	}, [filterItems, setFilters, dateOption, dateSpan]);
 
-	//innerBlocksの属性変更
-	//特定のブロックで属性が変更されたときの変更後の属性を取得する（コンテントは除く）
-	const changeTitleAttr = useBlockAttributeChanges(
+	//チェックボックスのデザインを変化したブロックのデザインに合わせる
+	useBlockAttributeChanges(
+		clientId,
+		"itmar/design-checkbox",
+		"itmar_filter_checkbox",
+		{ labelContent: "", inputValue: false },
+	);
+	//グループのデザインを変化したブロックのデザインに合わせる
+	useBlockAttributeChanges(
+		clientId,
+		"itmar/design-group",
+		"itmar_filterItem_group",
+	);
+	//タイトルのデザインを変化したブロックのデザインに合わせる
+	useBlockAttributeChanges(
 		clientId,
 		"itmar/design-title",
 		"itmar_filter_title",
-		innerFlattenedBlocks,
 		{ headingContent: "" },
 	);
-	console.log(changeTitleAttr);
 
-	useEffect(() => {
-		if (changeTitleAttr) {
-			setAttributes({ titleAttributes: changeTitleAttr.attributes });
-			//console.log(JSON.stringify(changeTitleAttr.attributes));
-		}
-	}, [changeTitleAttr]);
-
+	//設定されたブロックの属性を記録
 	useEffect(() => {
 		if (innerBlocks[0]) {
-			//グループブロックの属性を記録
+			//ブロック最上位のグループブロックの属性を記録
 			setAttributes({ groupBlockAttributes: innerBlocks[0].attributes });
+			//最初に見つかったitmar_filterItem_groupブロック
+			const filterGroupBolck = innerFlattenedBlocks.find(
+				(block) =>
+					block.name === "itmar/design-group" &&
+					block.attributes.className?.includes("itmar_filterItem_group"),
+			);
+			//属性を記録
+			if (filterGroupBolck) {
+				setAttributes({ filterGroupAttributes: filterGroupBolck.attributes });
+			}
+
+			//最初に見つかったitmar_filter_searchboxブロック
+			const titleBolck = innerFlattenedBlocks.find(
+				(block) =>
+					block.name === "itmar/design-title" &&
+					block.attributes.className?.includes("itmar_filter_title"),
+			);
+			//属性を記録
+			if (titleBolck) {
+				setAttributes({ titleAttributes: titleBolck.attributes });
+			}
 
 			//最初に見つかったitmar_filter_searchboxブロック
 			const searchBoxBolck = innerFlattenedBlocks.find(

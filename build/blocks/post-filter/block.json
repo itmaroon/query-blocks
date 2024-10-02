@@ -124,6 +124,97 @@
         }
       }
     },
+    "filterGroupAttributes": {
+      "type": "object",
+      "default": {
+        "default_pos": {
+          "direction": "vertical",
+          "reverse": false,
+          "inner_align": "flex-start",
+          "outer_align": "center",
+          "outer_vertical": "center",
+          "width_val": "wideSize",
+          "free_width": "400px",
+          "height_val": "fit",
+          "free_height": "300px",
+          "posValue": {
+            "vertBase": "top",
+            "horBase": "left",
+            "vertValue": "3em",
+            "horValue": "3em"
+          },
+          "margin": {
+            "top": "0px",
+            "left": "0px",
+            "bottom": "0px",
+            "right": "0px"
+          },
+          "padding": {
+            "top": "0px",
+            "left": "0px",
+            "bottom": "0px",
+            "right": "0px"
+          },
+          "padding_content": {
+            "top": "0px",
+            "left": "0px",
+            "bottom": "0px",
+            "right": "0px"
+          },
+          "grid_info": {
+            "gridElms": [],
+            "rowNum": 2,
+            "colNum": 2,
+            "rowGap": "5px",
+            "colGap": "5px",
+            "rowUnit": [],
+            "colUnit": []
+          }
+        },
+        "mobile_pos": {
+          "direction": "vertical",
+          "reverse": false,
+          "inner_align": "flex-start",
+          "outer_align": "center",
+          "outer_vertical": "center",
+          "width_val": "wideSize",
+          "free_width": "200px",
+          "height_val": "fit",
+          "free_height": "300px",
+          "posValue": {
+            "vertBase": "top",
+            "horBase": "left",
+            "vertValue": "2em",
+            "horValue": "1em"
+          },
+          "margin": {
+            "top": "0px",
+            "left": "0px",
+            "bottom": "0px",
+            "right": "0px"
+          },
+          "padding": {
+            "top": "0px",
+            "left": "0px",
+            "bottom": "0px",
+            "right": "0px"
+          },
+          "padding_content": {
+            "top": "20px",
+            "left": "10px",
+            "bottom": "20px",
+            "right": "10px"
+          },
+          "grid_info": {
+            "gridElms": [],
+            "rowNum": 2,
+            "colNum": 2,
+            "rowGap": "5px",
+            "colGap": "5px"
+          }
+        }
+      }
+    },
     "titleAttributes": {
       "type": "object",
       "default": {}
