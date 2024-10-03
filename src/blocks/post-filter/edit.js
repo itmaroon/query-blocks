@@ -392,6 +392,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		clientId,
 		"itmar/design-checkbox",
 		"itmar_filter_checkbox",
+		true,
 		{ labelContent: "", inputValue: false },
 	);
 	//グループのデザインを変化したブロックのデザインに合わせる
@@ -399,12 +400,14 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		clientId,
 		"itmar/design-group",
 		"itmar_filterItem_group",
+		true,
 	);
 	//タイトルのデザインを変化したブロックのデザインに合わせる
 	useBlockAttributeChanges(
 		clientId,
 		"itmar/design-title",
 		"itmar_filter_title",
+		true,
 		{ headingContent: "" },
 	);
 
