@@ -9,6 +9,7 @@ import {
 	useBlockProps,
 	useInnerBlocksProps,
 	InspectorControls,
+	InnerBlocks,
 } from "@wordpress/block-editor";
 
 import {
@@ -19,7 +20,7 @@ import {
 	RangeControl,
 	TextControl,
 } from "@wordpress/components";
-import { useEffect, useState } from "@wordpress/element";
+import { useEffect, useState, useRef } from "@wordpress/element";
 import { createBlock } from "@wordpress/blocks";
 
 import {
@@ -308,6 +309,7 @@ const removeNonMatchingClassName = (blockObject, choiceFields) => {
 	// 抽出したクラス名から"field_"を取り除く
 	const fields = fieldClasses.map((cls) => cls.replace("field_", ""));
 	// fieldsを一つずつ取り出して、choiceFieldsに含まれていない場合はblockObjectを削除
+
 	for (const field of fields) {
 		let containsField = false;
 		for (const choiceField of choiceFields) {
@@ -419,7 +421,10 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	} = attributes;
 
 	// dispatch関数を取得
-	const { replaceInnerBlocks } = useDispatch("core/block-editor");
+	const { replaceInnerBlocks, insertBlocks, removeBlocks } =
+		useDispatch("core/block-editor");
+	//blocksAttributesArrayの参照
+	const attArrayRef = useRef(null);
 
 	//choiseTerms属性からクエリー用の配列を生成
 	const getSelectedTaxonomyTerms = () => {
@@ -475,12 +480,15 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	};
 
 	useEffect(() => {
-		fetchSearch(
-			searchWord,
-			getSelectedTaxonomyTerms(),
-			getPeriodQuery(choicePeriod),
-			searchFields,
-		);
+		//ポストタイプの指定がないときは処理しない
+		if (selectedSlug) {
+			fetchSearch(
+				searchWord,
+				getSelectedTaxonomyTerms(),
+				getPeriodQuery(choicePeriod),
+				searchFields,
+			);
+		}
 	}, [
 		numberOfItems,
 		currentPage,
@@ -507,18 +515,27 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	});
 
 	//第一階層のインナーブロックの取得
-	const { innerBlocks } = useSelect(
-		(select) => ({
-			innerBlocks: select("core/block-editor").getBlocks(clientId),
-		}),
+	const { innerBlocks, parentBlock } = useSelect(
+		(select) => {
+			const { getBlocks, getBlockParents, getBlock } =
+				select("core/block-editor");
+			const parentIds = getBlockParents(clientId);
+			return {
+				innerBlocks: getBlocks(clientId),
+				parentBlock: getBlock(parentIds[0]),
+			};
+		},
 		[clientId],
 	);
 
 	//投稿データの抽出および表示フィールド変更に基づく再レンダリング
+
 	useEffect(() => {
 		if (!posts || !Array.isArray(posts)) {
 			return; //postsが返っていなければ処理しない。
 		}
+		//この副作用でattArrayRefの値を消す
+		attArrayRef.current = null;
 
 		//blocksAttributesArrayを複製する
 		const dispAttributeArray = [...blocksAttributesArray];
@@ -716,6 +733,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				addBlockobject,
 				choiceFields,
 			);
+
 			//filteredBlockObjectからreplaceInnerBlocks用のブロックオブジェクトを生成し、インナーブロックをレンダリング
 			const blocksObj = createBlocksFromObject(filteredBlockObject); //Promiseで返ってくる
 
@@ -727,7 +745,18 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		Promise.all(blocksArray)
 			.then((resolvedBlocks) => {
 				//インナーブロックの入れ替え;
-				replaceInnerBlocks(clientId, resolvedBlocks, false);
+				if (parentBlock?.name === "itmar/slide-mv") {
+					//親ブロックがitmar/slide-mvのときは、ピックアップしたユニットを親ブロックのインナーブロックとして挿入
+					const blockIdsToRemove = parentBlock.innerBlocks
+						?.filter((block) => block.name === "itmar/design-group")
+						.map((block) => block.clientId);
+					//一旦ユニットのitmar/design-groupを削除してから挿入
+					removeBlocks(blockIdsToRemove, false);
+					insertBlocks(resolvedBlocks, 0, parentBlock.clientId, false);
+				} else {
+					//元のブロックと入れ替え
+					replaceInnerBlocks(clientId, resolvedBlocks, false);
+				}
 			})
 			.catch((error) => {
 				// エラーハンドリング
@@ -747,7 +776,14 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 
 	//投稿データ更新関数
 	const saveToDatabase = () => {
-		innerBlocks.forEach((unitBlock) => {
+		//itmar/slide-mvが親ブロックの場合は親ブロックのインナーブロックを対象にセット
+		const targetBlocks =
+			parentBlock?.name === "itmar/slide-mv"
+				? parentBlock.innerBlocks?.filter(
+						(block) => block.name === "itmar/design-group",
+				  )
+				: innerBlocks;
+		targetBlocks.forEach((unitBlock) => {
 			//ユニットごとにポストデータを記録
 			const unitAttribute = getBlockAttributes(unitBlock);
 			//blockNumがnullの時は処理しない
@@ -755,7 +791,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 
 			//ブロックに記入された内容を取得
 			const fieldObjs = FieldClassNameObj(unitAttribute);
-			if (!fieldObjs) return; //入力フィールドがない場合は処理しない
+			if (!fieldObjs || fieldObjs.length < 1) return; //入力フィールドがない場合は処理しない
 
 			// カスタムフィールドとその他のフィールドを分離
 			const metaFields = {};
@@ -842,9 +878,16 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 
 	//ブロック属性の更新処理
 	useEffect(() => {
-		if (innerBlocks.length > 0) {
+		if (innerBlocks.length > 0 || parentBlock?.name === "itmar/slide-mv") {
 			const blockAttrArray = [];
-			innerBlocks.forEach((unitBlock) => {
+			//itmar/slide-mvが親ブロックの場合は親ブロックのインナーブロックを対象にセット
+			const targetBlocks =
+				parentBlock?.name === "itmar/slide-mv"
+					? parentBlock.innerBlocks?.filter(
+							(block) => block.name === "itmar/design-group",
+					  )
+					: innerBlocks;
+			targetBlocks.forEach((unitBlock) => {
 				const unitAttribute = getBlockAttributes(unitBlock);
 				//ユニットを配列に詰めてインナーブロックを更新
 				blockAttrArray.push(unitAttribute);
@@ -859,12 +902,14 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				blockAttrArray.push(blocksAttributesArray[index]);
 				index = (index + 1) % blocksAttributesArray.length;
 			}
-
-			if (!_.isEqual(blockAttrArray, blocksAttributesArray)) {
-				setAttributes({ blocksAttributesArray: blockAttrArray });
+			//既にattArrayRefにデータがセットされていれば
+			if (!attArrayRef.current) {
+				if (!_.isEqual(blockAttrArray, blocksAttributesArray)) {
+					setAttributes({ blocksAttributesArray: blockAttrArray });
+				}
 			}
 		}
-	}, [innerBlocks]);
+	}, [innerBlocks, parentBlock?.innerBlocks]);
 
 	//Noticeのインデックス保持
 	const [noticeClickedIndex, setNoticeClickedIndex] = useState(null);
@@ -977,6 +1022,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 											const updatedBlocksAttributes = [
 												...blocksAttributesArray,
 											];
+
 											//フィールド表示用のブロックからフィールド名と値を取得
 											const fieldArray = FieldClassNameObj(
 												updatedBlocksAttributes[index],
@@ -1011,6 +1057,8 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 											setAttributes({
 												blocksAttributesArray: updatedBlocksAttributes,
 											});
+											//変更後の参照を確保
+											attArrayRef.current = updatedBlocksAttributes;
 										}
 									},
 								},
@@ -1030,11 +1078,14 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				</PanelBody>
 			</InspectorControls>
 
-			<div className="outer_frame">
-				<div className="edit_area">
-					<div {...innerBlocksProps} />
+			{/* 親ブロックがitmar/slide-mvのときはレンダリングしない */}
+			{(!parentBlock || parentBlock.name !== "itmar/slide-mv") && (
+				<div className="outer_frame">
+					<div className="edit_area">
+						<div {...innerBlocksProps} />
+					</div>
 				</div>
-			</div>
+			)}
 		</>
 	);
 }

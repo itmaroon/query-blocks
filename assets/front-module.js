@@ -235,8 +235,8 @@ const ModifyFieldElement = (element, post, blockMap) => {
 	}
 };
 
-//ピックアップ投稿の表示・ページネーションの処理
-const pageChange = (pickup, currentPage) => {
+//ピックアップ投稿の表示（ダイナミックブロックと同様の表示）・ページネーションの処理
+const pickupChange = (pickup, fillFlg, currentPage = 0) => {
 	const pickupId = pickup.dataset.pickup_id;
 	const numberOfItems = pickup.dataset.number_of_items;
 	//const selectedRest = pickup.dataset.selected_rest;
@@ -265,24 +265,30 @@ const pageChange = (pickup, currentPage) => {
 		.then((data) => {
 			console.log(data);
 			const posts = data.posts;
-			const postUnits = pickup.querySelectorAll(".post_unit")[0];
-			if (!postUnits) return; //post_unitクラスの要素がなければリターン
+			//swiperFlgの値でデータの入れ替え要素を峻別
+			const divElements = !fillFlg
+				? Array.from(pickup.querySelectorAll(".post_unit")[0].children)
+				: Array.from(pickup.parentElement.children).filter(
+						(child) =>
+							child !== pickup && child.classList.contains("swiper-slide"),
+				  );
+			if (!divElements.length > 0) return; //post_unitクラスの要素がなければリターン
 
-			const postDivs = postUnits.children;
-			const divElements = Array.from(postDivs);
 			divElements.forEach((divs, index) => {
 				if (!posts[index]) {
 					divs.style.display = "none"; // 要素を非表示にする
 				} else {
 					//レンダリング指定のあるフィールドの内容をpostの内容によって書き換え
 					ModifyFieldElement(divs, posts[index], blockMap);
-					divs.style.display = "block"; // 要素を再表示する
+					//divs.style.display = "block"; // 要素を再表示する
 				}
 			});
 			// すべてのプロミスが完了したら非表示のクラスを外す
 			Promise.all(promises)
 				.then(() => {
-					const postUnits = document.querySelectorAll(".post_unit");
+					const postUnits = fillFlg
+						? document.querySelectorAll(".swiper-slide")
+						: document.querySelectorAll(".post_unit");
 					postUnits.forEach((unit) => {
 						//非表示のクラスを外す
 						unit.classList.remove("unit_hide");
@@ -343,7 +349,7 @@ const pageChange = (pickup, currentPage) => {
 									>
 										<button
 											onClick={() => {
-												pageChange(pickup, index);
+												pickupChange(pickup, fillFlg, index);
 											}}
 											disabled={index == currentPage}
 										>
@@ -397,7 +403,7 @@ const pageChange = (pickup, currentPage) => {
 												onClick={() => {
 													if (currentPage > 0) {
 														currentPage--;
-														pageChange(pickup, currentPage);
+														pickupChange(pickup, fillFlg, currentPage);
 													}
 												}}
 											>
@@ -420,7 +426,7 @@ const pageChange = (pickup, currentPage) => {
 												onClick={() => {
 													if (currentPage < totalPages - 1) {
 														currentPage++;
-														pageChange(pickup, currentPage);
+														pickupChange(pickup, fillFlg, currentPage);
 													}
 												}}
 											>
@@ -447,15 +453,31 @@ const pageChange = (pickup, currentPage) => {
 
 //documentの読み込み後に処理
 document.addEventListener("DOMContentLoaded", () => {
-	//PickUp Postの親要素を取得
+	//PickUp Postを取得
 	const pickupElement = document.querySelectorAll(
 		".wp-block-itmar-pickup-posts",
 	);
 
 	//pickupに応じてページネーションの操作によるページを表示
 	pickupElement.forEach((pickup) => {
-		//１ページ目を表示
-		pageChange(pickup, 0);
+		if (pickup.parentElement.classList.contains("swiper-wrapper")) {
+			// まずpickupの親要素を取得
+			const parentElement = pickup.parentElement;
+
+			// 親要素の子供の中からクラス名に'swiper-slide'が含まれる要素を取得
+			const swiperSlides = Array.from(parentElement.children).filter(
+				(child) => child !== pickup && child.classList.contains("swiper-slide"),
+			);
+			// 'unit_hide' クラスをswiper-slide要素に追加
+			swiperSlides.forEach((slide) => {
+				slide.classList.add("unit_hide");
+			});
+			//swiperにデータ注入
+			pickupChange(pickup, true);
+		} else {
+			//１ページ目を表示
+			pickupChange(pickup, false, 0);
+		}
 	});
 	//フィルタ設定用のブロックを取得
 	const filterContainer = document.querySelector(".wp-block-itmar-post-filter");
@@ -465,6 +487,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		(element) => element.getAttribute("data-pickup_id") === filterId,
 	); //フィルタ設定ブロックに対応するピックアップブロック
 	const pickupSlug = pickup?.dataset.selected_slug; //picupブロックから投稿タイプのスラッグを取得
+	const fillFlg = pickup?.parentElement.classList.contains("swiper-wrapper"); //picupブロックからデータ埋め込みのタイプを取得
 
 	if (filterContainer) {
 		//データベース上のタクソノミーとタームの設定を確認
@@ -544,7 +567,7 @@ document.addEventListener("DOMContentLoaded", () => {
 						//チェックされたタームを新しい選択項目としてデータセット
 						termQueryObj = checkedArray;
 
-						pageChange(pickup, 0); //表示ページの変更
+						pickupChange(pickup, fillFlg, 0); //表示ページの変更
 					});
 				});
 				//デザイングループのdateからラジオボタンを抽出
@@ -583,7 +606,7 @@ document.addEventListener("DOMContentLoaded", () => {
 							} else {
 								periodQueryObj = null;
 							}
-							pageChange(pickup, 0); //表示ページの変更
+							pickupChange(pickup, fillFlg, 0); //表示ページの変更
 						});
 					});
 				}
@@ -618,7 +641,7 @@ document.addEventListener("DOMContentLoaded", () => {
 				if (inputElement) {
 					// input要素の値を取得してグロバール変数に保存
 					searchKeyWord = inputElement.value;
-					pageChange(pickup, 0); //表示ページの変更
+					pickupChange(pickup, fillFlg, 0); //表示ページの変更
 				}
 			}
 		});

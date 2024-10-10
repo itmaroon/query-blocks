@@ -7,6 +7,12 @@
 
 .wp-block-itmar-pickup-posts {
 	.unit_hide{
-        display: none;
+        visibility: hidden;
+    }
+}
+
+.wp-block-itmar-slide-mv{
+    .unit_hide{
+        visibility: hidden;
     }
 }
