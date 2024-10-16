@@ -280,7 +280,7 @@ const pickupChange = (pickup, fillFlg, currentPage = 0) => {
 				} else {
 					//レンダリング指定のあるフィールドの内容をpostの内容によって書き換え
 					ModifyFieldElement(divs, posts[index], blockMap);
-					//divs.style.display = "block"; // 要素を再表示する
+					divs.style.display = "block"; // 要素を再表示する
 				}
 			});
 			// すべてのプロミスが完了したら非表示のクラスを外す

@@ -557,8 +557,8 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 
 		//postsが０のときは空のグループを登録して終了
 		if (posts.length == 0) {
-			// 	const emptyBlock = createBlock("itmar/design-group", {}, []);
-			// 	replaceInnerBlocks(clientId, emptyBlock, false);
+			const emptyBlock = createBlock("itmar/design-group", {}, []);
+			replaceInnerBlocks(clientId, emptyBlock, false);
 			return;
 		}
 

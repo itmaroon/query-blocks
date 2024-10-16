@@ -1,0 +1,228 @@
+# Copyright (C) 2024 Web Creator ITmaroon
+# This file is distributed under the GPL-2.0-or-later.
+msgid ""
+msgstr ""
+"Project-Id-Version: Post Blocks 0.1.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/post-blocks\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2024-10-16T10:16:21+02:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.10.0\n"
+"X-Domain: post-blocks\n"
+
+#. Plugin Name of the plugin
+#: C:\Users\itmaroon\Local Sites\block-test\app\public\wp-content\plugins\post-blocks\post-blocks.php
+msgid "Post Blocks"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: C:\Users\itmaroon\Local Sites\block-test\app\public\wp-content\plugins\post-blocks\post-blocks.php
+msgid "https://itmaroon.net"
+msgstr ""
+
+#. Description of the plugin
+#: C:\Users\itmaroon\Local Sites\block-test\app\public\wp-content\plugins\post-blocks\post-blocks.php
+msgid "A collection of blocks that display WordPress posts"
+msgstr ""
+
+#. Author of the plugin
+#: C:\Users\itmaroon\Local Sites\block-test\app\public\wp-content\plugins\post-blocks\post-blocks.php
+msgid "Web Creator ITmaroon"
+msgstr ""
+
+#: assets/front-module.js:192
+#: assets/front-module.js:226
+#: build/front-module.js:218
+msgid "There is no image set."
+msgstr ""
+
+#: build/blocks/post-filter/index.js:1
+#: src/blocks/post-filter/edit.js:48
+msgid "Search"
+msgstr ""
+
+#: build/blocks/post-filter/index.js:1
+#: src/blocks/post-filter/edit.js:49
+msgid "Date"
+msgstr ""
+
+#: build/blocks/post-filter/index.js:1
+#: src/blocks/post-filter/index.js:15
+msgid "This block provides users with the ability to set filters such as category and date for the Post Block."
+msgstr ""
+
+#: build/blocks/post-filter/index.js:1
+#: src/blocks/post-filter/index.js:63
+msgid "The string you want to search for..."
+msgstr ""
+
+#: build/blocks/post-filter/index.js:1
+#: build/blocks/post-pagenation/index.js:1
+#: src/blocks/post-filter/edit.js:643
+#: src/blocks/post-pagenation/edit.js:430
+msgid "Linked Post Block"
+msgstr ""
+
+#: build/blocks/post-filter/index.js:1
+#: build/blocks/post-pagenation/index.js:1
+#: src/blocks/post-filter/edit.js:648
+#: src/blocks/post-pagenation/edit.js:435
+msgid "Select Pickup Posts Block"
+msgstr ""
+
+#: build/blocks/post-filter/index.js:1
+#: build/blocks/post-pagenation/index.js:1
+#: src/blocks/post-filter/edit.js:651
+#: src/blocks/post-pagenation/edit.js:438
+msgid "Select a block"
+msgstr ""
+
+#: build/blocks/post-filter/index.js:1
+#: src/blocks/post-filter/edit.js:663
+msgid "Filter Item Setting"
+msgstr ""
+
+#: build/blocks/post-filter/index.js:1
+#: src/blocks/post-filter/edit.js:674
+msgid "Date filter Setting"
+msgstr ""
+
+#: build/blocks/post-filter/index.js:1
+#: src/blocks/post-filter/edit.js:676
+msgid "Search filter Setting"
+msgstr ""
+
+#: build/blocks/post-filter/index.js:1
+#: src/blocks/post-filter/edit.js:691
+msgid "Custom fields to select"
+msgstr ""
+
+#: build/blocks/post-filter/index.js:1
+#: src/blocks/post-filter/edit.js:739
+#: src/blocks/post-filter/edit.js:756
+#: src/blocks/post-filter/edit.js:789
+#: src/blocks/post-filter/edit.js:828
+#: src/blocks/post-filter/edit.js:846
+msgid "Year"
+msgstr ""
+
+#: build/blocks/post-filter/index.js:1
+#: src/blocks/post-filter/edit.js:740
+#: src/blocks/post-filter/edit.js:771
+#: src/blocks/post-filter/edit.js:804
+msgid "Month"
+msgstr ""
+
+#: build/blocks/post-filter/index.js:1
+#: src/blocks/post-filter/edit.js:741
+msgid "Day"
+msgstr ""
+
+#: build/blocks/post-filter/index.js:1
+#: src/blocks/post-filter/edit.js:753
+#: src/blocks/post-filter/edit.js:825
+msgid "Start of period"
+msgstr ""
+
+#: build/blocks/post-filter/index.js:1
+#: src/blocks/post-filter/edit.js:786
+#: src/blocks/post-filter/edit.js:843
+msgid "End of period"
+msgstr ""
+
+#: build/blocks/post-filter/index.js:1
+#: src/blocks/post-filter/edit.js:867
+msgid "Taxonomy Setting"
+msgstr ""
+
+#: build/blocks/post-pagenation/index.js:1
+#: src/blocks/post-pagenation/index.js:14
+msgid "This block displays pagination. It works in conjunction with the Post Block to switch pages."
+msgstr ""
+
+#: build/blocks/post-pagenation/index.js:1
+#: src/blocks/post-pagenation/edit.js:449
+msgid "Is Arrow Button"
+msgstr ""
+
+#: build/blocks/post-pagenation/index.js:1
+#: src/blocks/post-pagenation/edit.js:457
+msgid "Page Button Number"
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:611
+msgid "No title"
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:637
+msgid "No excerpt"
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:921
+msgid "Content Settings"
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:923
+msgid "Pickup ID"
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:929
+msgid "Select Post Type"
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:940
+msgid "Choice Taxsonomy"
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:943
+msgid "The relationship between taxonomies"
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:964
+msgid "Choice Field"
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:1006
+msgid "Unit Style Copy&Past"
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:1011
+msgid "Copy"
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:1018
+msgid "Paste"
+msgstr ""
+
+#: build/blocks/post-filter/block.json
+#: src/blocks/post-filter/block.json
+msgctxt "block title"
+msgid "Post Filter"
+msgstr ""
+
+#: build/blocks/post-pagenation/block.json
+#: src/blocks/post-pagenation/block.json
+msgctxt "block title"
+msgid "Post Pagenation"
+msgstr ""
+
+#: build/blocks/post-pickup/block.json
+#: src/blocks/post-pickup/block.json
+msgctxt "block title"
+msgid "Pickup Posts"
+msgstr ""
