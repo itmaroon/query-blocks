@@ -4,11 +4,10 @@
  *
  * Replace them with your own styles or remove the file completely.
  */
-.wp-block-itmar-pickup-posts .unit_hide {
-  visibility: hidden;
+.wp-block-itmar-post-crumbs {
+  box-sizing: border-box;
 }
-
-.wp-block-itmar-slide-mv .unit_hide {
-  visibility: hidden;
+.wp-block-itmar-post-crumbs .error {
+  color: var(--wp--preset--color--err-message);
 }
 /*# sourceMappingURL=style.css.map */

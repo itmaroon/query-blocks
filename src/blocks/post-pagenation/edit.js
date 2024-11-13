@@ -143,6 +143,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			setAllIsClickFalse(clickFlg);
 
 			//グループブロックの属性を記録
+
 			setAttributes({ groupBlockAttributes: innerBlocks[0].attributes });
 			//ボタン属性を記録
 			innerBlocks[0].innerBlocks.forEach((block, index) => {

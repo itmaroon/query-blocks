@@ -1,11 +1,17 @@
 import apiFetch from "@wordpress/api-fetch";
+import { RichText } from "@wordpress/block-editor";
 import { __ } from "@wordpress/i18n";
 import { format, getSettings } from "@wordpress/date";
 
 import { StyleComp as StyleGroup } from "../../block-collections/src/blocks/design-group/StyleGroup";
 import { StyleComp as StyleButton } from "../../block-collections/src/blocks/design-button/StyleButton";
+import { StyleComp as StyleTitle } from "../../block-collections/src/blocks/design-title/StyleWapper";
 import { createRoot } from "react-dom/client";
-import { restTaxonomies, getPeriodQuery } from "itmar-block-packages";
+import {
+	restTaxonomies,
+	getPeriodQuery,
+	termToDispObj,
+} from "itmar-block-packages";
 
 // プロミスを格納する配列
 const promises = [];
@@ -13,6 +19,7 @@ const promises = [];
 let termQueryObj = [];
 //期間のオブジェクトを格納する変数
 let periodQueryObj = {};
+let periodDisp = "";
 //キーワードを格納する変数
 let searchKeyWord = "";
 
@@ -242,8 +249,8 @@ const pickupChange = (pickup, fillFlg, currentPage = 0) => {
 	//const selectedRest = pickup.dataset.selected_rest;
 	const selectedSlug = pickup.dataset.selected_slug;
 	const taxRelateType = pickup.dataset.tax_relate_type;
-	const searchFields = JSON.parse(pickup.dataset.search_fields);
-	//const choiceTerms = JSON.parse(pickup.dataset.choice_terms);
+	const searchFields = JSON.parse(pickup.dataset.search_fields); //検索対象のカスタムフィールド
+	const choiceFields = JSON.parse(pickup.dataset.choice_fields);
 	const blockMap = JSON.parse(pickup.dataset.block_map);
 
 	//タームのセレクトオブジェクト
@@ -252,6 +259,7 @@ const pickupChange = (pickup, fillFlg, currentPage = 0) => {
 	//全体のクエリオブジェクト
 	const query = {
 		search: searchKeyWord,
+		custom_fields: choiceFields,
 		search_fields: searchFields,
 		post_type: selectedSlug,
 		per_page: numberOfItems,
@@ -264,6 +272,7 @@ const pickupChange = (pickup, fillFlg, currentPage = 0) => {
 	getSearchRecordsFromAPI(query)
 		.then((data) => {
 			console.log(data);
+
 			const posts = data.posts;
 			//swiperFlgの値でデータの入れ替え要素を峻別
 			const divElements = !fillFlg
@@ -300,7 +309,7 @@ const pickupChange = (pickup, fillFlg, currentPage = 0) => {
 			const pagenationRoot = document.getElementById(`page_${pickupId}`);
 
 			if (pagenationRoot && pagenationRoot.dataset.group_attributes) {
-				const pagention = createRoot(pagenationRoot); //ページネーションのルート要素
+				const pagenation = createRoot(pagenationRoot); //ページネーションのルート要素
 				//トータルのページ数を算出
 				const totalPages = Math.ceil(data.total / numberOfItems);
 
@@ -379,7 +388,7 @@ const pickupChange = (pickup, fillFlg, currentPage = 0) => {
 						});
 					};
 
-					pagention.render(
+					pagenation.render(
 						<StyleGroup
 							attributes={JSON.parse(pagenationRoot.dataset.group_attributes)}
 						>
@@ -440,12 +449,90 @@ const pickupChange = (pickup, fillFlg, currentPage = 0) => {
 					);
 				} else {
 					//ページネーションを消去
-					pagention.render(
+					pagenation.render(
 						<StyleGroup
 							attributes={JSON.parse(pagenationRoot.dataset.group_attributes)}
 						/>,
 					);
 				}
+			}
+			//パンくずリストのレンダリング
+			const crumbsRoot = document.getElementById(`crumbs_${pickupId}`);
+
+			if (crumbsRoot && crumbsRoot.dataset.group_attributes) {
+				//ブロックのルートを生成
+				const crumbs = createRoot(crumbsRoot); //
+				//タイトルコンテンツの属性
+				const { titleType, dateFormat, headingType } = JSON.parse(
+					crumbsRoot.dataset.crumb_attributes,
+				);
+				//表示するコンテンツの配列
+				const crumbArray = [];
+				//投稿タイプ名
+				crumbArray.push(crumbsRoot.dataset.post_name);
+				//検索キーワード
+				if (searchKeyWord) {
+					crumbArray.push(`"${searchKeyWord}"`);
+				}
+				//期間表示
+				if (periodDisp) {
+					crumbArray.push(periodDisp);
+				}
+				//ターム表示
+				if (termQueryObj.length > 0) {
+					const dispObj = termToDispObj(termQueryObj, " || ");
+					const dispString = Object.values(dispObj).join(` ${taxRelateType} `);
+					crumbArray.push(dispString);
+				}
+				//タイトルブロックの属性をインナーブロックとそれ以外に分離
+				const { block_style: title_style, ...crumbAttr } = JSON.parse(
+					crumbsRoot.dataset.crumb_attributes,
+				);
+				//リッチテキストをコンテンツにする関数
+				const renderRichText = (richText) => {
+					//タイトルタイプがdateのときは日付のフォーマットを当てて表示
+					const dispContent =
+						titleType === "date"
+							? format(dateFormat, richText, getSettings())
+							: richText;
+					return (
+						<RichText.Content
+							tagName={headingType}
+							value={dispContent}
+							style={title_style ? title_style : ""}
+						/>
+					);
+				};
+				//グループブロックの属性をインナーブロックとそれ以外に分離
+				const { block_style: group_style, ...groupAttr } = JSON.parse(
+					crumbsRoot.dataset.group_attributes,
+				);
+
+				//パンくずリストのレンダリング処理
+				crumbs.render(
+					<StyleGroup attributes={groupAttr}>
+						<div
+							class="wp-block-itmar-design-group"
+							style={group_style ? group_style : ""}
+						>
+							<div
+								className={`group_contents ${
+									crumbsRoot.dataset.is_anime ? "fadeTrigger" : ""
+								}`}
+								data-is_anime={crumbsRoot.dataset.is_anime}
+								data-anime_prm={JSON.stringify(crumbsRoot.dataset.anime_prm)}
+							>
+								{crumbArray.map((crumb) => {
+									return (
+										<StyleTitle attributes={crumbAttr}>
+											{renderRichText(crumb)}
+										</StyleTitle>
+									);
+								})}
+							</div>
+						</div>
+					</StyleGroup>,
+				);
 			}
 		})
 		.catch((error) => console.error(error));
@@ -504,6 +591,7 @@ document.addEventListener("DOMContentLoaded", () => {
 				const checkboxes = filterContainer.querySelectorAll(
 					'.itmar_filter_checkbox input[type="checkbox"]',
 				);
+
 				// taxArrayからすべてのterm nameを抽出
 				const allTermNames = taxArray.flatMap((tax) =>
 					tax.terms.map((term) => term.slug),
@@ -523,6 +611,7 @@ document.addEventListener("DOMContentLoaded", () => {
 						}
 					}
 				});
+
 				//post-filterブロック内のitmar_filter_checkboxのチェックボックスを監視するリスナー
 				checkboxes.forEach((checkbox) => {
 					checkbox.addEventListener("change", function () {
@@ -535,26 +624,30 @@ document.addEventListener("DOMContentLoaded", () => {
 								);
 								if (parentGroup) {
 									const classes = Array.from(parentGroup.classList);
-									const taxonomy = classes.find(
-										//wp-block-itmar-design-groupでないクラス名
-										(cls) => cls !== "wp-block-itmar-design-group",
-									);
+
+									const taxonomy = classes.find((className) => {
+										return taxArray.find((obj) => obj.value === className);
+									});
+
 									if (taxonomy) {
 										// taxArrayから一致する要素を探す
 										const matchingTax = taxArray.find(
 											(tax) => tax.value === taxonomy,
 										);
+
 										if (matchingTax) {
 											// termsから一致するslugを持つ要素を探す
 											const matchingTerm = matchingTax.terms.find(
 												(term) => term.slug === checkbox.name, //input要素のname属性がタームのスラッグ
 											);
+
 											if (matchingTerm) {
 												return {
 													taxonomy: taxonomy,
 													term: {
 														id: matchingTerm.id,
 														slug: matchingTerm.slug,
+														name: matchingTerm.name,
 													},
 												};
 											}
@@ -570,50 +663,51 @@ document.addEventListener("DOMContentLoaded", () => {
 						pickupChange(pickup, fillFlg, 0); //表示ページの変更
 					});
 				});
-				//デザイングループのdateからラジオボタンを抽出
-				const dateContainer = document.querySelector(
-					".itmar_filter_month, .itmar_filter_year, .itmar_filter_day",
-				);
-				const name = dateContainer.getAttribute("data-input_name"); // ラジオボタンのname属性
-
-				if (name) {
-					const radios = dateContainer.querySelectorAll(
-						`input[type="radio"][name="${name}"]`,
-					);
-					radios.forEach((radio) => {
-						radio.addEventListener("change", function () {
-							// チェックされているラジオボタンの値を表示（未選択の場合はundefined）
-							const checkedRadio = dateContainer.querySelector(
-								`input[type="radio"][name="${name}"]:checked`,
-							);
-							if (checkedRadio) {
-								let period = "";
-								//カレンダーの時はセレクト要素が抽出できる
-								const select = dateContainer.querySelector(
-									".itmar_block_select select",
-								);
-								if (select) {
-									const selectedValue =
-										select.options[select.selectedIndex].value;
-									period = `${selectedValue}/${checkedRadio.value
-										.toString()
-										.padStart(2, "0")}`;
-								} else {
-									period = checkedRadio.value;
-								}
-								const periodObj = getPeriodQuery(period);
-								periodQueryObj = { ...periodObj };
-							} else {
-								periodQueryObj = null;
-							}
-							pickupChange(pickup, fillFlg, 0); //表示ページの変更
-						});
-					});
-				}
 			})
 			.catch((error) => {
 				console.error("投稿の更新に失敗しました", error);
 			});
+		//デザイングループのdateからラジオボタンを抽出
+		const dateContainer = document.querySelector(
+			".itmar_filter_month, .itmar_filter_year, .itmar_filter_day",
+		);
+		const name = dateContainer.getAttribute("data-input_name"); // ラジオボタンのname属性
+
+		if (name) {
+			const radios = dateContainer.querySelectorAll(
+				`input[type="radio"][name="${name}"]`,
+			);
+
+			radios.forEach((radio) => {
+				radio.addEventListener("change", function () {
+					// チェックされているラジオボタンの値を表示（未選択の場合はundefined）
+					const checkedRadio = dateContainer.querySelector(
+						`input[type="radio"][name="${name}"]:checked`,
+					);
+
+					if (checkedRadio) {
+						//カレンダーの時はセレクト要素が抽出できる
+						const select = dateContainer.querySelector(
+							".itmar_block_select select",
+						);
+						if (select) {
+							const selectedValue = select.options[select.selectedIndex].value;
+							periodDisp = `${selectedValue}/${checkedRadio.value
+								.toString()
+								.padStart(2, "0")}`;
+						} else {
+							periodDisp = checkedRadio.value;
+						}
+						const periodObj = getPeriodQuery(periodDisp);
+						periodQueryObj = { ...periodObj };
+					} else {
+						periodDisp = "";
+						periodQueryObj = null;
+					}
+					pickupChange(pickup, fillFlg, 0); //表示ページの変更
+				});
+			});
+		}
 		//キーワード検索のインプットボックスとボタンを取得
 		const searchButton = document.querySelector(
 			".itmar_filter_searchbutton button",

@@ -1,0 +1,71 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 2,
+  "name": "itmar/post-crumbs",
+  "version": "0.1.0",
+  "title": "Post Crumbs",
+  "category": "design",
+  "supports": {
+    "html": false
+  },
+  "attributes": {
+    "selectedBlockId": {
+      "type": "string",
+      "default": ""
+    },
+    "postTypeName": {
+      "type": "string",
+      "default": ""
+    },
+    "groupBlockAttributes": {
+      "type": "object",
+      "default": {}
+    },
+    "crumbBlockAttributes": {
+      "type": "object",
+      "default": {
+        "headingType": "H4",
+        "optionStyle": {
+          "styleName": "is-style-sub_copy",
+          "alignment_copy": "center right",
+          "color_text_copy": "var(--wp--preset--color--content)",
+          "color_background_copy": "transparent",
+          "copy_content": "",
+          "copy_width": 0,
+          "font_style_copy": {
+            "fontSize": "16px",
+            "fontFamily": "Arial, sans-serif",
+            "fontWeight": "500",
+            "isItalic": false
+          },
+          "radius_copy": {
+            "topLeft": "10px",
+            "topRight": "10px",
+            "bottomRight": "0px",
+            "bottomLeft": "0px",
+            "value": "0px"
+          },
+          "padding_copy": {
+            "top": "2px",
+            "left": "2px",
+            "bottom": "2px",
+            "right": "2px"
+          },
+          "isIcon": true,
+          "icon_style": {
+            "icon_name": "f101",
+            "icon_pos": "left",
+            "icon_size": "24px",
+            "icon_color": "#000",
+            "icon_space": "0px",
+            "icon_family": "Font Awesome 6 Free"
+          }
+        }
+      }
+    }
+  },
+  "textdomain": "post-blocks",
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css"
+}

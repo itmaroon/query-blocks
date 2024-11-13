@@ -8,7 +8,7 @@ export default function save({ attributes }) {
 		selectedSlug,
 		selectedRest,
 		taxRelateType,
-		choiceTerms,
+		choiceFields,
 		blockMap,
 	} = attributes;
 
@@ -21,7 +21,7 @@ export default function save({ attributes }) {
 			data-selected_rest={selectedRest}
 			data-search_fields={JSON.stringify(searchFields)}
 			data-tax_relate_type={taxRelateType}
-			// data-choice_terms={JSON.stringify(choiceTerms)}
+			data-choice_fields={JSON.stringify(choiceFields)}
 			data-block_map={JSON.stringify(blockMap)}
 		>
 			<div className="post_unit unit_hide">

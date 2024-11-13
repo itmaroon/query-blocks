@@ -98,7 +98,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		selectedBlockId,
 		setFilters,
 		searchFields,
-		taxRelate,
 		dateOption,
 		dateSpan,
 		groupBlockAttributes,
@@ -110,12 +109,12 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		monthAttributes,
 		yearAttributes,
 		dayAttributes,
-		taxRelateAttributes,
 		checkBoxAttributes,
 	} = attributes;
 
-	// dispatch関数を取得
-	const { replaceInnerBlocks } = useDispatch("core/block-editor");
+	// ブロック編集関数を取得
+	const { replaceInnerBlocks, updateBlockAttributes } =
+		useDispatch("core/block-editor");
 
 	//インナーブロックのひな型を用意
 	const TEMPLATE = [];
@@ -156,39 +155,78 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		);
 	}, [targetBlocks]);
 
+	//pickupブロックの取得
+	const pickup = pickupPosts.find(
+		(block) => block.attributes.pickupId === selectedBlockId,
+	);
+
 	//インナーブロック内の検索用インプットボックス
-	const searchBox = useMemo(() => {
-		return innerFlattenedBlocks.find(
+	const [searchBox, setSearchBox] = useState(null);
+	useEffect(() => {
+		const blocks = innerFlattenedBlocks.find(
 			(block) =>
 				block.attributes.className &&
 				block.attributes.className
 					?.split(" ")
 					.includes("itmar_filter_searchbox"),
 		);
+		setSearchBox(blocks);
 	}, [innerBlocks]);
 
 	//インナーブロック内の検索用ボタン
-	const searchButton = useMemo(() => {
-		return innerFlattenedBlocks.find(
+	const [searchButton, setSearchButton] = useState(null);
+	useEffect(() => {
+		const blocks = innerFlattenedBlocks.find(
 			(block) =>
 				block.attributes.className &&
 				block.attributes.className
 					?.split(" ")
 					.includes("itmar_filter_searchbutton"),
 		);
+		setSearchButton(blocks);
 	}, [innerBlocks]);
 
 	//インナーブロック内のDesign Checkボックス
-	const checkboxBlocks = useMemo(() => {
-		return innerFlattenedBlocks.filter(
+	const [checkboxBlocks, setCheckboxBlocks] = useState([]);
+	//インナーブロックの変化をcheckboxBlocksに反映（pickupのデータ選択に副作用）
+	useEffect(() => {
+		const blocks = innerFlattenedBlocks.filter(
 			(block) =>
 				block.attributes.className &&
 				block.attributes.className.includes("itmar_filter_checkbox"),
 		);
+
+		setCheckboxBlocks(blocks);
 	}, [innerBlocks]);
+	//pickupの変化に合わせてインナーブロック内のDesign Checkボックスを変更
+	useEffect(() => {
+		const checkedArray = pickup?.attributes.choiceTerms.map(
+			(item) => item.term.slug,
+		);
+		checkboxBlocks.forEach((block) => {
+			// updateBlockAttributesを使ってinputValueを更新
+			updateBlockAttributes(block.clientId, {
+				inputValue: checkedArray.includes(block.attributes.inputName),
+			});
+		});
+	}, [pickup?.attributes.choiceTerms]);
+
 	//インナーブロック内のDesign Radioボックス
-	const periodBlocks = useMemo(() => {
-		return innerFlattenedBlocks.filter(
+	// const periodBlocks = useMemo(() => {
+	// 	return innerFlattenedBlocks.filter(
+	// 		(block) =>
+	// 			block.attributes.className &&
+	// 			(block.attributes.className?.split(" ").includes("itmar_filter_year") ||
+	// 				block.attributes.className
+	// 					?.split(" ")
+	// 					.includes("itmar_filter_month") ||
+	// 				block.attributes.className?.split(" ").includes("itmar_filter_day")),
+	// 	);
+	// }, [innerBlocks]);
+	const [periodBlocks, setPeriodBlocks] = useState([]);
+	//インナーブロックの変化をcheckboxBlocksに反映（pickupのデータ選択に副作用）
+	useEffect(() => {
+		const blocks = innerFlattenedBlocks.filter(
 			(block) =>
 				block.attributes.className &&
 				(block.attributes.className?.split(" ").includes("itmar_filter_year") ||
@@ -197,15 +235,9 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 						.includes("itmar_filter_month") ||
 					block.attributes.className?.split(" ").includes("itmar_filter_day")),
 		);
+
+		setPeriodBlocks(blocks);
 	}, [innerBlocks]);
-
-	//pickupブロックの取得
-	const pickup = pickupPosts.find(
-		(block) => block.attributes.pickupId === selectedBlockId,
-	);
-
-	//属性変更関数を取得
-	const { updateBlockAttributes } = useDispatch("core/block-editor");
 
 	//選択されたpickupで設定されているポストタイプに紐づいているタクソノミーをフィルター項目に追加
 	const [filterItems, setFilterItems] = useState(builtin_items);
@@ -274,14 +306,16 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					const searchButton = createBlock("itmar/design-button", {
 						className: "itmar_filter_searchbutton",
 						...searchButtonAttributes,
+						linkKind: "none",
 					});
 					searchBlocksArray.push(searchInput);
 					searchBlocksArray.push(searchButton);
+
 					//design-groupを用意
 					const searchGroup = createBlock(
 						"itmar/design-group",
 						{
-							className: filterItem.value,
+							className: "itmar_search_group",
 							...groupSearchAttributes, //デフォルトのクループ設定
 						},
 						searchBlocksArray,
@@ -366,11 +400,12 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				const filterGroup = createBlock(
 					"itmar/design-group",
 					{
-						className: `itmar_filterItem_group ${filterItem.value}`,
 						...filterGroupAttributes, //既にグループがある場合はその属性を引き継ぐ
+						className: `itmar_filterItem_group ${filterItem.value}`,
 					},
 					filterBlocksArray,
 				);
+
 				//全体のインナーブロックに詰める
 				innerBlocksArray.push(filterGroup);
 			}
@@ -401,6 +436,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		"itmar/design-group",
 		"itmar_filterItem_group",
 		true,
+		{ className: "" },
 	);
 	//タイトルのデザインを変化したブロックのデザインに合わせる
 	useBlockAttributeChanges(
@@ -427,6 +463,18 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				setAttributes({ filterGroupAttributes: filterGroupBolck.attributes });
 			}
 
+			//最初に見つかったsearchグループブロック
+			const serachGroupBolck = innerFlattenedBlocks.find(
+				(block) =>
+					block.name === "itmar/design-group" &&
+					block.attributes.className?.includes("itmar_search_group"),
+			);
+
+			//属性を記録
+			if (serachGroupBolck) {
+				setAttributes({ groupSearchAttributes: serachGroupBolck.attributes });
+			}
+
 			//最初に見つかったitmar_filter_searchboxブロック
 			const titleBolck = innerFlattenedBlocks.find(
 				(block) =>
@@ -448,12 +496,14 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			if (searchBoxBolck) {
 				setAttributes({ searchBoxAttributes: searchBoxBolck.attributes });
 			}
+
 			//最初に見つかったitmar_filter_searchbuttonブロック
 			const searchButtonBolck = allFlattenedBlocks.find(
 				(block) =>
 					block.name === "itmar/design-button" &&
 					block.attributes.className === "itmar_filter_searchbutton",
 			);
+
 			//属性を記録
 			if (searchButtonBolck) {
 				setAttributes({ searchButtonAttributes: searchButtonBolck.attributes });
@@ -513,7 +563,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		//タクソノミーによるフィルタ
 		if (checkboxBlocks.length > 0) {
 			//チェックボックスのブロックがチェックされているもののinputNameを集めた配列
-
 			const checkedTerms = checkboxBlocks
 				.filter((block) => block.attributes.inputValue === true)
 				.map((block) => block.attributes.inputName);
@@ -522,13 +571,12 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			const termsInfo = filterItems
 				.filter((item) => "terms" in item)
 				.flatMap((item) => item.terms);
-
 			//選択されたtermのスラッグからterm情報を取得して新たなターム情報を生成
 			const selTerms = termsInfo
 				.filter((term) => term.slug && checkedTerms.includes(term.slug))
 				.map((term) => ({
 					taxonomy: term.taxonomy,
-					term: { id: term.id, slug: term.slug },
+					term: { id: term.id, slug: term.slug, name: term.name },
 				}));
 
 			//タクソノミーの選択に変化があるときだけ属性を変更(タクソノミー情報取得後)
@@ -586,7 +634,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	}, [
 		checkboxBlocks,
 		periodBlocks,
-		pickup,
+		//pickup,
 		filterItems,
 		searchButton,
 		searchFields,
@@ -633,8 +681,22 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 
 	//pickupで登録されたカスタムフィールド
 	const pickupCustomFields = pickup?.attributes.blockMap;
+
 	//カスタムキーでないフィールド
 	const excludedKeys = ["title", "date", "excerpt"];
+	//選択対象のカスタムフィールド
+
+	const targetCustomFields = pickupCustomFields
+		? Object.keys(pickupCustomFields) // オブジェクトのキーを配列に変換
+				.filter(
+					(key) =>
+						!excludedKeys.includes(key) &&
+						(pickupCustomFields[key] === "itmar/design-title" ||
+							pickupCustomFields[key] === "core/paragraph"),
+				)
+				.map((key) => ({ [key]: pickupCustomFields[key] }))
+		: null;
+	//console.log(targetCustomFields);
 
 	return (
 		<>
@@ -686,7 +748,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 								{filter.value === "search" &&
 									isChecked &&
 									pickupCustomFields &&
-									Object.keys(pickupCustomFields).length > 0 && (
+									targetCustomFields.length > 0 && (
 										<PanelBody
 											title={__("Custom fields to select", "post-blocks")}
 											initialOpen={true}

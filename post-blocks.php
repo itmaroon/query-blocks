@@ -79,10 +79,26 @@ function itmar_search_endpoint($request)
 	$per_page = $request->get_param('per_page') ? (int) $request->get_param('per_page') : 10;
 	$page = $request->get_param('page') ? (int) $request->get_param('page') : 1;
 	$tax_relation = $request->get_param('tax_relation') ? strtoupper($request->get_param('tax_relation')) : 'AND';
+	$orderby = $request->get_param('orderby');
+	$order = $request->get_param('order');
 	$after = $request->get_param('after');
 	$before = $request->get_param('before');
 
-	// カスタムフィールドの配列（検索対象にしたいフィールドを指定）
+	// 選択したカスタムフィールドを取得
+	$choice_fields_prm = $request->get_param('custom_fields');
+	$custom_fields = explode(',', $choice_fields_prm);
+	$meta_fields = array_map(function ($field) {
+		return str_replace('meta_', '', $field);
+	}, array_filter($custom_fields, function ($field) {
+		return strpos($field, 'meta_') === 0;
+	}));
+	// $acf_fields = array_map(function ($field) {
+	// 	return str_replace('acf_', '', $field);
+	// }, array_filter($custom_fields, function ($field) {
+	// 	return strpos($field, 'acf_') === 0;
+	// }));
+
+	// 検索対象にしたいカスタムフィールドを取得
 	$custom_fields_prm = $request->get_param('search_fields');
 	$custom_fields = array();
 	if ($custom_fields_prm != "") {
@@ -93,6 +109,8 @@ function itmar_search_endpoint($request)
 		'post_type' => $post_type,
 		'posts_per_page' => $per_page,
 		'paged' => $page,
+		'orderby' => $orderby,
+		'order' => $order,
 		'post_status' => 'publish',
 		//'apply_custom_search_filter' => true
 	);
@@ -211,19 +229,22 @@ function itmar_search_endpoint($request)
 				'sticky' => is_sticky($post_id),
 				'template' => get_page_template_slug($post_id),
 				'format' => get_post_format($post_id) ?: 'standard',
-				'meta' => array(),
+				//'meta' => array(),
 				'categories' => wp_get_post_categories($post_id, array('fields' => 'ids')),
 				'tags' => wp_get_post_tags($post_id, array('fields' => 'ids')),
 			);
 
 			// カスタムフィールドの値を追加
-			foreach ($custom_fields as $field) {
+			foreach ($meta_fields as $field) {
 				$post_data['meta'][$field] = get_post_meta($post_id, $field, true);
 			}
 
-
 			// ACFフィールドがある場合
 			if (function_exists('get_fields')) {
+				// foreach ($acf_fields as $field) {
+				// 	$post_data['acf'][$field] = get_field($field, $post_id);;
+				// }
+				//全てのACFフィールドを取得（グループフィールドも正常に取得される）
 				$acf_fields = get_fields($post_id);
 				if ($acf_fields) {
 					$post_data['acf'] = $acf_fields;

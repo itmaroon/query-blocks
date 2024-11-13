@@ -8,15 +8,15 @@ import "./style.scss";
 import Edit from "./edit";
 import save from "./save";
 import metadata from "./block.json";
-import { ReactComponent as Pickup } from "./pickup.svg";
+import { ReactComponent as Crumbs } from "./crumbs.svg";
 
 registerBlockType(metadata.name, {
-	icon: <Pickup />,
 	description: __(
-		"This block picks up and displays articles that you want to draw attention to.",
+		"This block displays the selection status of post data in breadcrumb format.",
 		"post-blocks",
 	),
 
+	icon: <Crumbs />,
 	edit: Edit,
 	save,
 });

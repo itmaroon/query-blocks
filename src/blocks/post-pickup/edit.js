@@ -9,13 +9,13 @@ import {
 	useBlockProps,
 	useInnerBlocksProps,
 	InspectorControls,
-	InnerBlocks,
 } from "@wordpress/block-editor";
 
 import {
 	PanelBody,
 	PanelRow,
 	RadioControl,
+	CheckboxControl,
 	Notice,
 	RangeControl,
 	TextControl,
@@ -28,6 +28,7 @@ import {
 	TermChoiceControl,
 	FieldChoiceControl,
 	getPeriodQuery,
+	restFieldes,
 } from "itmar-block-packages";
 
 //スペースのリセットバリュー
@@ -402,6 +403,19 @@ const mergeBlocks = (fieldArray, changeBlock) => {
 	return createBlock(blockName, processedAttributes, newInnerBlocks);
 };
 
+//階層化されたフィールドオブジェクトを.つなぎの文字列にする関数
+const custumFieldsToString = (obj, prefix = "") => {
+	return Object.entries(obj).flatMap(([key, value]) => {
+		const fieldName = prefix ? `${prefix}.${key}` : key; //prefixはグループ名
+
+		if (typeof value === "object" && value !== null) {
+			return custumFieldsToString(value, fieldName);
+		} else {
+			return fieldName;
+		}
+	});
+};
+
 export default function Edit({ attributes, setAttributes, clientId }) {
 	const {
 		pickupId,
@@ -423,6 +437,8 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	// dispatch関数を取得
 	const { replaceInnerBlocks, insertBlocks, removeBlocks } =
 		useDispatch("core/block-editor");
+	//削除したブロックのclientIdの配列の参照
+	const deletedClientIdsRef = useRef(new Set());
 	//blocksAttributesArrayの参照
 	const attArrayRef = useRef(null);
 
@@ -450,16 +466,20 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		keyWord,
 		taxonomyTerms,
 		periodObj,
+		choiceFields,
 		searchFields,
 	) => {
 		const query = {
 			search: keyWord,
+			custom_fields: choiceFields,
 			search_fields: searchFields,
 			post_type: selectedSlug,
 			per_page: numberOfItems,
 			page: currentPage + 1,
 			...taxonomyTerms,
 			...periodObj,
+			orderby: "date", // 日付順に並べる
+			order: "desc", // 降順 (最新から古い順)
 		};
 
 		const queryString = new URLSearchParams(query).toString();
@@ -482,10 +502,12 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	useEffect(() => {
 		//ポストタイプの指定がないときは処理しない
 		if (selectedSlug) {
+			//RestAPIでpostを取得する
 			fetchSearch(
 				searchWord,
 				getSelectedTaxonomyTerms(),
 				getPeriodQuery(choicePeriod),
+				choiceFields,
 				searchFields,
 			);
 		}
@@ -497,8 +519,75 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		taxRelateType,
 		choicePeriod,
 		searchWord,
+		choiceFields,
 		searchFields,
 	]);
+
+	useEffect(() => {
+		//ポストタイプの指定がないときは処理しない
+		if (selectedRest) {
+			//ポストタイプによってblockMapに書き込まれたカスタムフィールドの情報を更新
+			const fetchData = async () => {
+				try {
+					//フィールド情報を取得
+					const fetchFields = await restFieldes(selectedRest);
+
+					//フィールド情報からカスタムフィールド情報を抜き出し
+					const customFieldsObj = {
+						...Object.entries(fetchFields[0].meta).reduce(
+							(acc, [key, value]) => ({
+								...acc,
+								[`meta_${key}`]: value,
+							}),
+							{},
+						),
+						...Object.entries(fetchFields[0].acf).reduce(
+							(acc, [key, value]) => ({
+								...acc,
+								[`acf_${key}`]: value,
+							}),
+							{},
+						),
+					};
+					//カスタムフィール情報を平坦化して_acf_changedとfootnotesを除外
+					const customFielsArray = custumFieldsToString(customFieldsObj).filter(
+						(field) =>
+							field !== "meta__acf_changed" && field !== "meta_footnotes",
+					);
+					//プレフィックスを削除した配列
+					const normalizedFieldsArray = customFielsArray.map((field) =>
+						field.replace(/^(meta_|acf_)/, ""),
+					);
+					// カスタムフィールド情報にないものをフィルタリング
+					// これらのキーは常に保持する
+					const alwaysKeep = ["title", "date", "excerpt", "featured_media"];
+					const filteredBlockMap = Object.fromEntries(
+						Object.entries(blockMap).filter(
+							([key]) =>
+								normalizedFieldsArray.includes(key) || alwaysKeep.includes(key),
+						),
+					);
+					normalizedFieldsArray.forEach((field) => {
+						if (!filteredBlockMap.hasOwnProperty(field)) {
+							filteredBlockMap[field] = "itmar/design-title";
+						}
+					});
+					//blockMapを書き換え
+					const newBlockMap = { ...filteredBlockMap };
+					setAttributes({ blockMap: newBlockMap });
+					//choiceFieldsから登録されていないカスタムフィールドを除外
+					const filterChoiceFields = choiceFields.filter(
+						(field) =>
+							customFielsArray.includes(field) || alwaysKeep.includes(field),
+					);
+					setAttributes({ choiceFields: filterChoiceFields });
+				} catch (error) {
+					console.error("Error fetching data:", error.message);
+				}
+			};
+			fetchData();
+		}
+	}, [selectedRest]);
 
 	//インナーブロックのひな型を用意
 	const TEMPLATE = [];
@@ -522,7 +611,10 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			const parentIds = getBlockParents(clientId);
 			return {
 				innerBlocks: getBlocks(clientId),
-				parentBlock: getBlock(parentIds[0]),
+				parentBlock:
+					parentIds.length > 0
+						? getBlock(parentIds[parentIds.length - 1])
+						: null,
 			};
 		},
 		[clientId],
@@ -595,6 +687,10 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			for (const fieldItem of choiceFields) {
 				//カスタムフィールドの接頭辞をはずす
 				const field = fieldItem.replace(/^(meta_|acf_)/, "");
+				const blockname = blockMap[field];
+				if (!blockname) {
+					continue;
+				}
 				//グループ名をフィールドから外す
 				const element_field = field.includes(".")
 					? field.substring(field.lastIndexOf(".") + 1)
@@ -645,8 +741,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 							{ ...post.acf, ...post.meta },
 							element_field,
 						);
-
-						const blockname = blockMap[field];
 
 						switch (blockname) {
 							case "itmar/design-title":
@@ -749,30 +843,59 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					//親ブロックがitmar/slide-mvのときは、ピックアップしたユニットを親ブロックのインナーブロックとして挿入
 					const blockIdsToRemove = parentBlock.innerBlocks
 						?.filter((block) => block.name === "itmar/design-group")
-						.map((block) => block.clientId);
-					//一旦ユニットのitmar/design-groupを削除してから挿入
-					removeBlocks(blockIdsToRemove, false);
-					insertBlocks(resolvedBlocks, 0, parentBlock.clientId, false);
+						.map((block) => block.clientId)
+						.filter((id) => !deletedClientIdsRef.current.has(id)); // 一度削除されたclientIdは除外;
+
+					//ユニットのitmar/design-groupを削除
+					if (blockIdsToRemove && blockIdsToRemove.length > 0) {
+						// removeBlocks実行
+						removeBlocks(blockIdsToRemove);
+						//新しいユニットの挿入
+						insertBlocks(resolvedBlocks, 0, parentBlock.clientId, false);
+						// 削除されたclientIdをセットに追加して記録
+						blockIdsToRemove.forEach((id) =>
+							deletedClientIdsRef.current.add(id),
+						);
+					}
 				} else {
 					//元のブロックと入れ替え
 					replaceInnerBlocks(clientId, resolvedBlocks, false);
 				}
+				//貼付け中フラグをオフ
+				setIsPastWait(false);
+				setNoticeClickedIndex(null); //保持を解除
+				//ペースト対象配列の初期化
+				setIsCopyChecked(Array(blocksAttributesArray.length).fill(false));
 			})
 			.catch((error) => {
+				//貼付け中フラグをオフ
+				setIsPastWait(false);
+				setNoticeClickedIndex(null); //保持を解除
+				//ペースト対象配列の初期化
+				setIsCopyChecked(Array(blocksAttributesArray.length).fill(false));
 				// エラーハンドリング
 				console.error("ブロックの解決中にエラーが発生しました:", error);
 			});
 	}, [posts, choiceFields, blockMap]);
 
-	//スタイルがペーストされたときブロックの再レンダリングをトリガー
+	//ペースト対象のチェック配列
+	const [isCopyChecked, setIsCopyChecked] = useState([]);
+	//CheckBoxのイベントハンドラ
+	const handleCheckboxChange = (index, newCheckedValue) => {
+		const updatedIsChecked = [...isCopyChecked];
+		updatedIsChecked[index] = newCheckedValue;
+		setIsCopyChecked(updatedIsChecked);
+	};
+
+	//blocksAttributesArrayが更新された時の処理
 	useEffect(() => {
+		//スタイルがペーストされたときブロックの再レンダリングをトリガー
 		if (noticeClickedIndex !== null) {
 			//noticeClickedIndexがコピー元を保持している場合
-			setNoticeClickedIndex(null); //保持を解除
 			const newPosts = [...posts];
 			setPosts(newPosts);
 		}
-	}, [blocksAttributesArray]); //blocksAttributesArrayが更新された
+	}, [blocksAttributesArray]);
 
 	//投稿データ更新関数
 	const saveToDatabase = () => {
@@ -827,7 +950,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 
 			//RestAPIのエンドポイントを生成
 			const path = `/wp/v2/${selectedRest}/${unitAttribute.attributes.blockNum}`;
-
 			// リクエストオプション
 			const options = {
 				method: "PUT",
@@ -913,6 +1035,8 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 
 	//Noticeのインデックス保持
 	const [noticeClickedIndex, setNoticeClickedIndex] = useState(null);
+	//貼付け中のフラグ保持
+	const [isPastWait, setIsPastWait] = useState(false);
 
 	//レンダリング
 	return (
@@ -971,19 +1095,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 							onChange={(newChoiceFields) => {
 								//選択されたフィールド名の配列を登録
 								setAttributes({ choiceFields: newChoiceFields });
-								// プレフィックスを除去した新しい配列を作成
-								const processedFields = newChoiceFields.map((field) =>
-									field.replace(/^(meta_|acf_)/, ""),
-								);
-
-								// 選択されたフィールド名に基づく新しいblockMapオブジェクトを生成
-								processedFields.forEach((field) => {
-									if (!blockMap.hasOwnProperty(field)) {
-										blockMap[field] = "itmar/design-title";
-									}
-								});
-								const newBlockMap = { ...blockMap };
-								setAttributes({ blockMap: newBlockMap });
 							}}
 							onBlockMapChange={(newBlockMap) => {
 								setAttributes({ blockMap: newBlockMap });
@@ -994,7 +1105,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					<PanelRow className="itmar_post_blocks_pannel">
 						<RangeControl
 							value={numberOfItems}
-							label={__("Display Num", "block-collections")}
+							label={__("Display Num", "post-blocks")}
 							max={30}
 							min={1}
 							onChange={(val) => setAttributes({ numberOfItems: val })}
@@ -1006,72 +1117,113 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				<PanelBody title={__("Unit Style Copy&Past", "post-blocks")}>
 					<div className="itmar_post_block_notice">
 						{blocksAttributesArray.map((styleObj, index) => {
-							const actions = [
-								{
-									label: __("Copy", "post-blocks"),
-									onClick: () => {
-										//CopyがクリックされたNoticeの順番を記録
-										setNoticeClickedIndex(index);
-									},
+							const copyBtn = {
+								label: __("Copy", "post-blocks"),
+								onClick: () => {
+									//CopyがクリックされたNoticeの順番を記録
+									setNoticeClickedIndex(index);
 								},
-								{
-									label: __("Paste", "post-blocks"),
-									onClick: () => {
-										//記録された順番の書式をコピー
-										if (noticeClickedIndex !== null) {
-											const updatedBlocksAttributes = [
-												...blocksAttributesArray,
-											];
+							};
+							const pastBtn = {
+								label: isPastWait ? (
+									<img
+										src={`${post_blocks.plugin_url}/assets/past-wait.gif`}
+										alt={__("wait", "post-blocks")}
+										style={{ width: "36px", height: "36px" }} // サイズ調整
+									/>
+								) : (
+									__("Paste", "post-blocks")
+								),
+								onClick: () => {
+									//貼付け中フラグをオン
+									setIsPastWait(true);
+									//await new Promise((resolve) => setTimeout(resolve, 0));
 
-											//フィールド表示用のブロックからフィールド名と値を取得
-											const fieldArray = FieldClassNameObj(
-												updatedBlocksAttributes[index],
-											);
+									//記録された順番の書式をコピー
+									if (noticeClickedIndex !== null) {
+										//blocksAttributesArrayのクローンを作成
+										const updatedBlocksAttributes = [...blocksAttributesArray];
+										//ペースト対象配列にチェックが入った順番のものにペースト
+										isCopyChecked.forEach((checked, index) => {
+											if (checked) {
+												//フィールド表示用のブロックからフィールド名と値を取得
+												const fieldArray = FieldClassNameObj(
+													updatedBlocksAttributes[index],
+												);
 
-											//新しいブロックのスタイル属性にブロックエディタ上のフィールドの値を戻す
-											const mergedBlock = mergeBlocks(
-												fieldArray,
-												blocksAttributesArray[noticeClickedIndex],
-											);
-											const mergedAttributes = getBlockAttributes(mergedBlock);
+												//新しいブロックのスタイル属性にブロックエディタ上のフィールドの値を戻す
+												const mergedBlock = mergeBlocks(
+													fieldArray,
+													blocksAttributesArray[noticeClickedIndex],
+												);
+												const mergedAttributes =
+													getBlockAttributes(mergedBlock);
 
-											// 元のblockNumを確保
-											const { blockNum: sourceNum } =
-												blocksAttributesArray[index].attributes;
-											//新しいブロックスタイルをルートの属性とそれ以外に分離
-											const { attributes: changeAttributes, ...elseElement } =
-												mergedAttributes;
-											//ルートの属性からblockNumを分離
-											const { blockNum: changeNum, ...elseAttributes } =
-												changeAttributes;
-											// 新しいオブジェクトを生成（元のblockNumを入れる）
-											const newElement = {
-												...elseElement,
-												attributes: { blockNum: sourceNum, ...elseAttributes },
-											};
+												// 元のblockNumを確保
+												const { blockNum: sourceNum } =
+													blocksAttributesArray[index].attributes;
+												//新しいブロックスタイルをルートの属性とそれ以外に分離
+												const { attributes: changeAttributes, ...elseElement } =
+													mergedAttributes;
+												//ルートの属性からblockNumを分離
+												const { blockNum: changeNum, ...elseAttributes } =
+													changeAttributes;
+												// 新しいオブジェクトを生成（元のblockNumを入れる）
+												const newElement = {
+													...elseElement,
+													attributes: {
+														blockNum: sourceNum,
+														...elseAttributes,
+													},
+												};
 
-											//配列の要素を入れ替える
-											updatedBlocksAttributes[index] = newElement;
+												//配列の要素を入れ替える
+												updatedBlocksAttributes[index] = newElement;
+											}
+										});
 
-											//属性を変更
-											setAttributes({
-												blocksAttributesArray: updatedBlocksAttributes,
-											});
-											//変更後の参照を確保
-											attArrayRef.current = updatedBlocksAttributes;
-										}
-									},
+										//属性を変更
+										setAttributes({
+											blocksAttributesArray: updatedBlocksAttributes,
+										});
+										//変更後の参照を確保
+										attArrayRef.current = updatedBlocksAttributes;
+									}
 								},
-							];
+							};
+							const actions =
+								noticeClickedIndex === index ? [pastBtn] : [copyBtn];
+							const checkInfo = __(
+								"Check the unit to which you want to paste and press the Paste button.",
+								"post-blocks",
+							);
+							const checkContent =
+								noticeClickedIndex != index ? (
+									<CheckboxControl
+										label={__("Paste to", "post-blocks")}
+										checked={isCopyChecked[index]}
+										onChange={(newVal) => {
+											handleCheckboxChange(index, newVal);
+										}}
+									/>
+								) : (
+									<p>{checkInfo}</p>
+								);
+
 							return (
-								<Notice
-									key={index}
-									actions={actions}
-									status={noticeClickedIndex === index ? "success" : "default"}
-									isDismissible={false}
-								>
-									<p>{`Unit ${index + 1} Style`}</p>
-								</Notice>
+								<div className="style_unit">
+									<Notice
+										key={index}
+										actions={actions}
+										status={
+											noticeClickedIndex === index ? "success" : "default"
+										}
+										isDismissible={false}
+									>
+										<p>{`Unit ${index + 1} Style`}</p>
+									</Notice>
+									<div className="past_state">{checkContent}</div>
+								</div>
 							);
 						})}
 					</div>

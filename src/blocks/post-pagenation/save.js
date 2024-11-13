@@ -11,6 +11,7 @@ export default function save({ attributes }) {
 		forwardBlockAttributes,
 		backBlockAttributes,
 	} = attributes;
+
 	return (
 		<div {...useBlockProps.save()}>
 			<div

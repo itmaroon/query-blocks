@@ -26,10 +26,7 @@
 			"type":"string",
 			"default":"month"
 		},
-		"taxRelate":{
-			"type":"string",
-			"default":"or"
-		},
+		
 		
 		"groupBlockAttributes":{
 			"type":"object",
@@ -40,7 +37,7 @@
 					"inner_align": "flex-start",
 					"outer_align": "center",
 					"outer_vertical": "center",
-					"width_val": "wideSize",
+					"width_val": "full",
 					"free_width": "400px",
 					"height_val": "fit",
 					"free_height": "300px",
@@ -84,7 +81,7 @@
 					"inner_align": "flex-start",
 					"outer_align": "center",
 					"outer_vertical": "center",
-					"width_val": "wideSize",
+					"width_val": "full",
 					"free_width": "200px",
 					"height_val": "fit",
 					"free_height": "300px",
@@ -131,7 +128,7 @@
 					"inner_align": "flex-start",
 					"outer_align": "center",
 					"outer_vertical": "center",
-					"width_val": "wideSize",
+					"width_val": "full",
 					"free_width": "400px",
 					"height_val": "fit",
 					"free_height": "300px",
@@ -175,7 +172,7 @@
 					"inner_align": "flex-start",
 					"outer_align": "center",
 					"outer_vertical": "center",
-					"width_val": "wideSize",
+					"width_val": "full",
 					"free_width": "200px",
 					"height_val": "fit",
 					"free_height": "300px",
@@ -226,7 +223,7 @@
 					"inner_align": "flex-start",
 					"outer_align": "center",
 					"outer_vertical": "center",
-					"width_val": "wideSize",
+					"width_val": "full",
 					"free_width": "400px",
 					"height_val": "fit",
 					"free_height": "300px",
@@ -270,7 +267,7 @@
 					"inner_align": "flex-start",
 					"outer_align": "center",
 					"outer_vertical": "center",
-					"width_val": "wideSize",
+					"width_val": "full",
 					"free_width": "200px",
 					"height_val": "fit",
 					"free_height": "300px",
