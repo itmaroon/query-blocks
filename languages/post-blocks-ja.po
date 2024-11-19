@@ -4,8 +4,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Post Blocks 0.1.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/post-blocks\n"
-"POT-Creation-Date: 2024-10-16T10:16:21+02:00\n"
-"PO-Revision-Date: 2024-10-16 17:36+0900\n"
+"POT-Creation-Date: 2024-11-18T11:50:17+01:00\n"
+"PO-Revision-Date: 2024-11-18 20:00+0900\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: ja\n"
@@ -16,33 +16,52 @@ msgstr ""
 "X-Domain: post-blocks\n"
 
 #. Plugin Name of the plugin
-#: C:\Users\itmaroon\Local
-#: Sites\block-test\app\public\wp-content\plugins\post-blocks\post-blocks.php
+#: post-blocks.php
 msgid "Post Blocks"
 msgstr ""
 
 #. Plugin URI of the plugin
-#: C:\Users\itmaroon\Local
-#: Sites\block-test\app\public\wp-content\plugins\post-blocks\post-blocks.php
+#: post-blocks.php
 msgid "https://itmaroon.net"
 msgstr ""
 
 #. Description of the plugin
-#: C:\Users\itmaroon\Local
-#: Sites\block-test\app\public\wp-content\plugins\post-blocks\post-blocks.php
+#: post-blocks.php
 msgid "A collection of blocks that display WordPress posts"
 msgstr "WordPressの投稿を表示させるためのブロックを集めました。"
 
 #. Author of the plugin
-#: C:\Users\itmaroon\Local
-#: Sites\block-test\app\public\wp-content\plugins\post-blocks\post-blocks.php
+#: post-blocks.php
 msgid "Web Creator ITmaroon"
 msgstr "WebクリエイターITmaroon"
 
-#: assets/front-module.js:192 assets/front-module.js:226
-#: build/front-module.js:218
+#: assets/front-module.js:199 assets/front-module.js:233
+#: build/front-module.js:311
 msgid "There is no image set."
 msgstr "画像がセットされていません。"
+
+#: build/blocks/post-crumbs/index.js:1 src/blocks/post-crumbs/index.js:14
+msgid ""
+"This block displays the selection status of post data in breadcrumb format."
+msgstr "このブロックは、投稿データの選択状態をパンくず形式で表示します。"
+
+#: build/blocks/post-crumbs/index.js:1 build/blocks/post-filter/index.js:1
+#: build/blocks/post-pagenation/index.js:1 src/blocks/post-crumbs/edit.js:214
+#: src/blocks/post-filter/edit.js:705 src/blocks/post-pagenation/edit.js:431
+msgid "Linked Post Block"
+msgstr "投稿ブロックとのリンク"
+
+#: build/blocks/post-crumbs/index.js:1 build/blocks/post-filter/index.js:1
+#: build/blocks/post-pagenation/index.js:1 src/blocks/post-crumbs/edit.js:219
+#: src/blocks/post-filter/edit.js:710 src/blocks/post-pagenation/edit.js:436
+msgid "Select Pickup Posts Block"
+msgstr "投稿ブロックの選択"
+
+#: build/blocks/post-crumbs/index.js:1 build/blocks/post-filter/index.js:1
+#: build/blocks/post-pagenation/index.js:1 src/blocks/post-crumbs/edit.js:222
+#: src/blocks/post-filter/edit.js:713 src/blocks/post-pagenation/edit.js:439
+msgid "Select a block"
+msgstr "ブロックを選択"
 
 #: build/blocks/post-filter/index.js:1 src/blocks/post-filter/edit.js:48
 msgid "Search"
@@ -64,63 +83,48 @@ msgstr ""
 msgid "The string you want to search for..."
 msgstr "検索したい文字列を入力..."
 
-#: build/blocks/post-filter/index.js:1 build/blocks/post-pagenation/index.js:1
-#: src/blocks/post-filter/edit.js:643 src/blocks/post-pagenation/edit.js:430
-msgid "Linked Post Block"
-msgstr "投稿ブロックとのリンク"
-
-#: build/blocks/post-filter/index.js:1 build/blocks/post-pagenation/index.js:1
-#: src/blocks/post-filter/edit.js:648 src/blocks/post-pagenation/edit.js:435
-msgid "Select Pickup Posts Block"
-msgstr "投稿ブロックの選択"
-
-#: build/blocks/post-filter/index.js:1 build/blocks/post-pagenation/index.js:1
-#: src/blocks/post-filter/edit.js:651 src/blocks/post-pagenation/edit.js:438
-msgid "Select a block"
-msgstr "ブロックを選択"
-
-#: build/blocks/post-filter/index.js:1 src/blocks/post-filter/edit.js:663
+#: build/blocks/post-filter/index.js:1 src/blocks/post-filter/edit.js:725
 msgid "Filter Item Setting"
 msgstr "フィルタアイテムの設定"
 
-#: build/blocks/post-filter/index.js:1 src/blocks/post-filter/edit.js:674
+#: build/blocks/post-filter/index.js:1 src/blocks/post-filter/edit.js:736
 msgid "Date filter Setting"
 msgstr "期間フィルタの設定"
 
-#: build/blocks/post-filter/index.js:1 src/blocks/post-filter/edit.js:676
+#: build/blocks/post-filter/index.js:1 src/blocks/post-filter/edit.js:738
 msgid "Search filter Setting"
 msgstr "検索フィルタの設定"
 
-#: build/blocks/post-filter/index.js:1 src/blocks/post-filter/edit.js:691
+#: build/blocks/post-filter/index.js:1 src/blocks/post-filter/edit.js:753
 msgid "Custom fields to select"
 msgstr "カスタムフィールドの選択"
 
-#: build/blocks/post-filter/index.js:1 src/blocks/post-filter/edit.js:739
-#: src/blocks/post-filter/edit.js:756 src/blocks/post-filter/edit.js:789
-#: src/blocks/post-filter/edit.js:828 src/blocks/post-filter/edit.js:846
+#: build/blocks/post-filter/index.js:1 src/blocks/post-filter/edit.js:801
+#: src/blocks/post-filter/edit.js:818 src/blocks/post-filter/edit.js:851
+#: src/blocks/post-filter/edit.js:890 src/blocks/post-filter/edit.js:908
 msgid "Year"
 msgstr "年"
 
-#: build/blocks/post-filter/index.js:1 src/blocks/post-filter/edit.js:740
-#: src/blocks/post-filter/edit.js:771 src/blocks/post-filter/edit.js:804
+#: build/blocks/post-filter/index.js:1 src/blocks/post-filter/edit.js:802
+#: src/blocks/post-filter/edit.js:833 src/blocks/post-filter/edit.js:866
 msgid "Month"
 msgstr "月"
 
-#: build/blocks/post-filter/index.js:1 src/blocks/post-filter/edit.js:741
+#: build/blocks/post-filter/index.js:1 src/blocks/post-filter/edit.js:803
 msgid "Day"
 msgstr "日"
 
-#: build/blocks/post-filter/index.js:1 src/blocks/post-filter/edit.js:753
-#: src/blocks/post-filter/edit.js:825
+#: build/blocks/post-filter/index.js:1 src/blocks/post-filter/edit.js:815
+#: src/blocks/post-filter/edit.js:887
 msgid "Start of period"
 msgstr "始期"
 
-#: build/blocks/post-filter/index.js:1 src/blocks/post-filter/edit.js:786
-#: src/blocks/post-filter/edit.js:843
+#: build/blocks/post-filter/index.js:1 src/blocks/post-filter/edit.js:848
+#: src/blocks/post-filter/edit.js:905
 msgid "End of period"
 msgstr "終期"
 
-#: build/blocks/post-filter/index.js:1 src/blocks/post-filter/edit.js:867
+#: build/blocks/post-filter/index.js:1 src/blocks/post-filter/edit.js:929
 msgid "Taxonomy Setting"
 msgstr "タクソノミーの設定"
 
@@ -134,58 +138,86 @@ msgstr ""
 "り替えます。"
 
 #: build/blocks/post-pagenation/index.js:1
-#: src/blocks/post-pagenation/edit.js:449
+#: src/blocks/post-pagenation/edit.js:450
 msgid "Is Arrow Button"
 msgstr "矢印ボタン"
 
 #: build/blocks/post-pagenation/index.js:1
-#: src/blocks/post-pagenation/edit.js:457
+#: src/blocks/post-pagenation/edit.js:458
 msgid "Page Button Number"
-msgstr "ページ番号"
+msgstr "番号ボタンの表示数"
 
-#: build/blocks/post-pickup/index.js:1 src/blocks/post-pickup/edit.js:611
+#: build/blocks/post-pickup/index.js:1 src/blocks/post-pickup/index.js:15
+msgid ""
+"This block picks up and displays articles that you want to draw attention to."
+msgstr "このブロックは、注目したい投稿をピックアップして表示します。"
+
+#: build/blocks/post-pickup/index.js:1 src/blocks/post-pickup/edit.js:707
 msgid "No title"
 msgstr "タイトルなし"
 
-#: build/blocks/post-pickup/index.js:1 src/blocks/post-pickup/edit.js:637
+#: build/blocks/post-pickup/index.js:1 src/blocks/post-pickup/edit.js:733
 msgid "No excerpt"
 msgstr "抜粋なし"
 
-#: build/blocks/post-pickup/index.js:1 src/blocks/post-pickup/edit.js:921
+#: build/blocks/post-pickup/index.js:1 src/blocks/post-pickup/edit.js:1045
 msgid "Content Settings"
 msgstr "内容の設定"
 
-#: build/blocks/post-pickup/index.js:1 src/blocks/post-pickup/edit.js:923
+#: build/blocks/post-pickup/index.js:1 src/blocks/post-pickup/edit.js:1047
 msgid "Pickup ID"
 msgstr "投稿ブロックのID"
 
-#: build/blocks/post-pickup/index.js:1 src/blocks/post-pickup/edit.js:929
+#: build/blocks/post-pickup/index.js:1 src/blocks/post-pickup/edit.js:1053
 msgid "Select Post Type"
 msgstr "投稿タイプの選択"
 
-#: build/blocks/post-pickup/index.js:1 src/blocks/post-pickup/edit.js:940
+#: build/blocks/post-pickup/index.js:1 src/blocks/post-pickup/edit.js:1064
 msgid "Choice Taxsonomy"
 msgstr "タクソノミーの選択"
 
-#: build/blocks/post-pickup/index.js:1 src/blocks/post-pickup/edit.js:943
+#: build/blocks/post-pickup/index.js:1 src/blocks/post-pickup/edit.js:1067
 msgid "The relationship between taxonomies"
 msgstr "タクソノミーの牽連関係"
 
-#: build/blocks/post-pickup/index.js:1 src/blocks/post-pickup/edit.js:964
+#: build/blocks/post-pickup/index.js:1 src/blocks/post-pickup/edit.js:1088
 msgid "Choice Field"
 msgstr "フィールドの選択"
 
-#: build/blocks/post-pickup/index.js:1 src/blocks/post-pickup/edit.js:1006
+#: build/blocks/post-pickup/index.js:1 src/blocks/post-pickup/edit.js:1108
+msgid "Display Num"
+msgstr "表示番号"
+
+#: build/blocks/post-pickup/index.js:1 src/blocks/post-pickup/edit.js:1117
 msgid "Unit Style Copy&Past"
 msgstr "ユニットスタイルのコピー・貼付"
 
-#: build/blocks/post-pickup/index.js:1 src/blocks/post-pickup/edit.js:1011
+#: build/blocks/post-pickup/index.js:1 src/blocks/post-pickup/edit.js:1121
 msgid "Copy"
 msgstr "コピー"
 
-#: build/blocks/post-pickup/index.js:1 src/blocks/post-pickup/edit.js:1018
+#: build/blocks/post-pickup/index.js:1 src/blocks/post-pickup/edit.js:1131
+msgid "wait"
+msgstr "処理中"
+
+#: build/blocks/post-pickup/index.js:1 src/blocks/post-pickup/edit.js:1135
 msgid "Paste"
 msgstr "貼付け"
+
+#: build/blocks/post-pickup/index.js:1 src/blocks/post-pickup/edit.js:1196
+msgid "Check the unit to which you want to paste and press the Paste button."
+msgstr "貼り付けたいユニットをチェックして、「貼り付け」ボタンを押します。"
+
+#: build/blocks/post-pickup/index.js:1 src/blocks/post-pickup/edit.js:1203
+#, fuzzy
+#| msgid "Paste"
+msgid "Paste to"
+msgstr "貼付け"
+
+#: build/blocks/post-crumbs/block.json src/blocks/post-crumbs/block.json
+msgctxt "block title"
+msgid "Post Crumbs"
+msgstr ""
 
 #: build/blocks/post-filter/block.json src/blocks/post-filter/block.json
 msgctxt "block title"
