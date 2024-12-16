@@ -19,6 +19,7 @@ import {
 	Notice,
 	RangeControl,
 	TextControl,
+	ToggleControl,
 } from "@wordpress/components";
 import { useEffect, useState, useRef } from "@wordpress/element";
 import { createBlock } from "@wordpress/blocks";
@@ -74,11 +75,13 @@ function mergeNestedObjects(target, source) {
 			if (
 				source[key] &&
 				typeof source[key] === "object" &&
-				Object.getOwnPropertyNames(source[key]).length == 0
+				(Object.getOwnPropertyNames(source[key]).length == 0 || // RichTextの戻り値はキーを検出できないオブジェクト
+					(Object.getOwnPropertyNames(source[key]).length <= 1 &&
+						source[key].hasOwnProperty("originalHTML"))) //// RichTextの戻り値はoriginalHTMLをキーとするオブジェクトを持つときがある
 			) {
-				// #eをキーとして持つオブジェクトはそのままコピー
 				target[key] = source[key];
 			} else if (source[key] instanceof Object && !Array.isArray(source[key])) {
+				// ネストされたオブジェクトは上書きせずにマージ
 				target[key] = target[key] || {};
 				mergeNestedObjects(target[key], source[key]);
 			} else {
@@ -267,7 +270,8 @@ const FieldClassNameObj = (blockObject) => {
 	// classNamesが空配列ではない場合、classNamesの最初の要素とblockObjectをペアにしたオブジェクトを要素とする配列を返す
 	if (classNames.length > 0) {
 		const fieldValue =
-			blockObject.blockName === "itmar/design-title"
+			blockObject.blockName === "itmar/design-title" &&
+			!blockObject.attributes.className.includes("itmar_link_block")
 				? blockObject.attributes.headingContent
 				: blockObject.blockName === "core/paragraph"
 				? blockObject.attributes.content
@@ -378,7 +382,12 @@ const mergeBlocks = (fieldArray, changeBlock) => {
 		//フィールドのデータはコピー前のデータに書き戻す
 		switch (blockName) {
 			case "itmar/design-title":
-				processedAttributes.headingContent = fieldValue;
+				if (processedAttributes.className?.includes("itmar_link_block")) {
+					processedAttributes.selectedPageUrl = fieldValue;
+				} else {
+					processedAttributes.headingContent = fieldValue;
+				}
+
 				break;
 			case "core/paragraph":
 				processedAttributes.content = fieldValue;
@@ -386,6 +395,10 @@ const mergeBlocks = (fieldArray, changeBlock) => {
 			case "core/image":
 				if (fieldValue) {
 					processedAttributes.id = fieldValue;
+				}
+			case "itmar/design-button":
+				if (fieldValue) {
+					processedAttributes.selectedPageUrl = fieldValue;
 				}
 
 				break;
@@ -419,6 +432,7 @@ const custumFieldsToString = (obj, prefix = "") => {
 export default function Edit({ attributes, setAttributes, clientId }) {
 	const {
 		pickupId,
+		pickupType,
 		selectedSlug,
 		selectedRest,
 		choiceTerms,
@@ -428,14 +442,17 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		searchWord,
 		searchFields,
 		numberOfItems,
+		posts,
 		numberOfTotal,
 		currentPage,
 		blockMap,
 		blocksAttributesArray,
+		emptyMessageAttributes,
+		emptyGroupAttributes,
 	} = attributes;
 
 	// dispatch関数を取得
-	const { replaceInnerBlocks, insertBlocks, removeBlocks } =
+	const { replaceInnerBlocks, insertBlocks, removeBlocks, removeBlock } =
 		useDispatch("core/block-editor");
 	//削除したブロックのclientIdの配列の参照
 	const deletedClientIdsRef = useRef(new Set());
@@ -461,7 +478,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	};
 
 	//RestAPIでpostを取得する
-	const [posts, setPosts] = useState([]);
+	//const [posts, setPosts] = useState([]);
 	const fetchSearch = async (
 		keyWord,
 		taxonomyTerms,
@@ -474,7 +491,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			custom_fields: choiceFields,
 			search_fields: searchFields,
 			post_type: selectedSlug,
-			per_page: numberOfItems,
+			per_page: pickupType === "multi" ? numberOfItems : 1,
 			page: currentPage + 1,
 			...taxonomyTerms,
 			...periodObj,
@@ -491,13 +508,22 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			const data = await response.json();
 
 			console.log(data);
-			setPosts(data.posts);
-			setAttributes({ numberOfTotal: data.total });
+
+			//setPosts(data.posts);
+			setAttributes({ posts: data.posts, numberOfTotal: data.total });
 			// データの処理
 		} catch (error) {
 			console.error("Failed to fetch posts:", error);
 		}
 	};
+
+	// useEffect(async () => {
+	// 	const singleResponse = await fetch(
+	// 		`${post_blocks.home_url}/wp-json/itmar-rest-api/v1/single-post`,
+	// 	);
+	// 	const singleData = await singleResponse.json();
+	// 	console.log(singleData);
+	// }, []);
 
 	useEffect(() => {
 		//ポストタイプの指定がないときは処理しない
@@ -512,6 +538,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			);
 		}
 	}, [
+		pickupType,
 		numberOfItems,
 		currentPage,
 		selectedSlug,
@@ -560,7 +587,13 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					);
 					// カスタムフィールド情報にないものをフィルタリング
 					// これらのキーは常に保持する
-					const alwaysKeep = ["title", "date", "excerpt", "featured_media"];
+					const alwaysKeep = [
+						"title",
+						"date",
+						"excerpt",
+						"featured_media",
+						"link",
+					];
 					const filteredBlockMap = Object.fromEntries(
 						Object.entries(blockMap).filter(
 							([key]) =>
@@ -598,6 +631,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			"itmar/design-title",
 			"core/image",
 			"core/paragraph",
+			"itmar/design-button",
 		],
 		template: TEMPLATE,
 		templateLock: false,
@@ -609,6 +643,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			const { getBlocks, getBlockParents, getBlock } =
 				select("core/block-editor");
 			const parentIds = getBlockParents(clientId);
+
 			return {
 				innerBlocks: getBlocks(clientId),
 				parentBlock:
@@ -647,11 +682,25 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			dispAttributeArray.splice(postsLength);
 		}
 
-		//postsが０のときは空のグループを登録して終了
+		//postsが０のときは空のメッセージ表示ブロックを登録して終了
 		if (posts.length == 0) {
-			const emptyBlock = createBlock("itmar/design-group", {}, []);
-			replaceInnerBlocks(clientId, emptyBlock, false);
+			const emptyMessage = createBlock(
+				"itmar/design-title",
+				emptyMessageAttributes,
+			);
+			const emptyBlock = createBlock(
+				"itmar/design-group",
+				{ ...emptyGroupAttributes, className: "itmar_emptyGruop" },
+				[emptyMessage],
+			);
+			replaceInnerBlocks(clientId, [emptyBlock], false);
 			return;
+		} else if (
+			innerBlocks.length === 1 &&
+			innerBlocks[0].attributes.className?.includes("itmar_emptyGruop")
+		) {
+			//空を示すメッセージブロックは削除
+			removeBlock(innerBlocks[0].clientId);
 		}
 
 		//blocksAttributesArrayの数分のブロックを生成
@@ -731,6 +780,12 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 									content: post.excerpt.rendered
 										? post.excerpt.rendered.replace(/<\/?p>/g, "") //pタグを除去する
 										: __("No excerpt", "post-blocks"),
+							  }
+							: element_field === "link"
+							? {
+									className: "itmar_link_block field_link",
+									linkKind: "free",
+									selectedPageUrl: post.link ? post.link : "",
 							  }
 							: null;
 
@@ -893,7 +948,8 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		if (noticeClickedIndex !== null) {
 			//noticeClickedIndexがコピー元を保持している場合
 			const newPosts = [...posts];
-			setPosts(newPosts);
+			//setPosts(newPosts);
+			setAttributes({ posts: newPosts });
 		}
 	}, [blocksAttributesArray]);
 
@@ -951,6 +1007,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			//RestAPIのエンドポイントを生成
 			const path = `/wp/v2/${selectedRest}/${unitAttribute.attributes.blockNum}`;
 			// リクエストオプション
+
 			const options = {
 				method: "PUT",
 				headers: {
@@ -982,7 +1039,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 
 	useEffect(() => {
 		if (isSavingPost && !isAutosavingPost) {
-			// 保存処理
+			//手動保存時のみ保存する
 			saveToDatabase();
 		}
 	}, [isSavingPost, isAutosavingPost]);
@@ -1001,6 +1058,21 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	//ブロック属性の更新処理
 	useEffect(() => {
 		if (innerBlocks.length > 0 || parentBlock?.name === "itmar/slide-mv") {
+			//インナーブロックが対象ブロックなしの表示の時はemptyGroupAttributesの更新処理を行う
+			if (
+				innerBlocks.length === 1 &&
+				innerBlocks[0].attributes.className?.includes("itmar_emptyGruop")
+			) {
+				const titleBlock = innerBlocks[0].innerBlocks?.find(
+					(block) => (block.name = "itmar/design-title"),
+				);
+				setAttributes({
+					emptyMessageAttributes: titleBlock?.attributes,
+					emptyGroupAttributes: innerBlocks[0].attributes,
+				});
+				return;
+			}
+			//ユニットの属性更新処理
 			const blockAttrArray = [];
 			//itmar/slide-mvが親ブロックの場合は親ブロックのインナーブロックを対象にセット
 			const targetBlocks =
@@ -1061,6 +1133,21 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 							}
 						}}
 					/>
+
+					<div className="itmar_select_row">
+						<RadioControl
+							label={__("Pickup Post Type", "post-blocks")}
+							selected={pickupType}
+							options={[
+								{ label: __("Muluti Post", "post-blocks"), value: "multi" },
+								{ label: __("Single Post", "post-blocks"), value: "single" },
+							]}
+							onChange={(changeOption) =>
+								setAttributes({ pickupType: changeOption })
+							}
+						/>
+					</div>
+
 					<PanelBody title={__("Choice Taxsonomy", "post-blocks")}>
 						<div className="itmar_select_row">
 							<RadioControl
@@ -1101,16 +1188,17 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 							}}
 						/>
 					</PanelBody>
-
-					<PanelRow className="itmar_post_blocks_pannel">
-						<RangeControl
-							value={numberOfItems}
-							label={__("Display Num", "post-blocks")}
-							max={30}
-							min={1}
-							onChange={(val) => setAttributes({ numberOfItems: val })}
-						/>
-					</PanelRow>
+					{pickupType === "multi" && (
+						<PanelRow className="itmar_post_blocks_pannel">
+							<RangeControl
+								value={numberOfItems}
+								label={__("Display Num", "post-blocks")}
+								max={30}
+								min={1}
+								onChange={(val) => setAttributes({ numberOfItems: val })}
+							/>
+						</PanelRow>
+					)}
 				</PanelBody>
 			</InspectorControls>
 			<InspectorControls group="styles">

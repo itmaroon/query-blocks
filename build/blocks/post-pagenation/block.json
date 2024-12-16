@@ -9,6 +9,10 @@
     "html": false
   },
   "attributes": {
+    "pageType": {
+      "type": "string",
+      "default": "pagenation"
+    },
     "dispOfItems": {
       "type": "number",
       "default": 3
@@ -42,6 +46,14 @@
       "default": {}
     },
     "backBlockAttributes": {
+      "type": "object",
+      "default": {}
+    },
+    "forwardTitleAttributes": {
+      "type": "object",
+      "default": {}
+    },
+    "backTitleAttributes": {
       "type": "object",
       "default": {}
     }

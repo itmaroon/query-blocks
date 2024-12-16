@@ -161,6 +161,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	useEffect(() => {
 		if (pickup) {
 			const {
+				pickupType,
 				selectedSlug,
 				searchWord,
 				choicePeriod,
@@ -192,6 +193,12 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 							` ${taxRelateType} `,
 						);
 						crumbArray.push(blockArrayAdd(dispString));
+					}
+					//タイトル
+					if (pickupType === "single") {
+						crumbArray.push(
+							blockArrayAdd(pickup.attributes.posts[0]?.title.rendered),
+						);
 					}
 					//Design Groupに入れてレンダリング
 					const crumbBlock = createBlock(

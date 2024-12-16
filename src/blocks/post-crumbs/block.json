@@ -9,7 +9,6 @@
 		"html": false
 	},
 	"attributes": {
-		
 		"selectedBlockId":{
 			"type":"string",
 			"default":""

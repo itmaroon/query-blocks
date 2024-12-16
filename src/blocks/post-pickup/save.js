@@ -3,6 +3,7 @@ import { useBlockProps, InnerBlocks } from "@wordpress/block-editor";
 export default function save({ attributes }) {
 	const {
 		pickupId,
+		pickupType,
 		numberOfItems,
 		searchFields,
 		selectedSlug,
@@ -16,6 +17,7 @@ export default function save({ attributes }) {
 		<div
 			{...useBlockProps.save()}
 			data-pickup_id={pickupId}
+			data-pickup_type={pickupType}
 			data-number_of_items={numberOfItems}
 			data-selected_slug={selectedSlug}
 			data-selected_rest={selectedRest}

@@ -13,9 +13,17 @@
       "type": "string",
       "default": "Default_ID"
     },
+    "pickupType": {
+      "type": "string",
+      "default": "multi"
+    },
     "numberOfItems": {
       "type": "number",
       "default": 3
+    },
+    "posts": {
+      "type": "array",
+      "default": []
     },
     "numberOfTotal": {
       "type": "number",

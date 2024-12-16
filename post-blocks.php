@@ -37,12 +37,16 @@ if (!function_exists('get_plugin_data')) {
 
 
 $block_entry = new \Itmar\BlockClassPakage\ItmarEntryClass();
+$block_access = new \Itmar\BlockClassPakage\ItmarAccessClass();
 
 //ブロックの登録
 add_action('init', function () use ($block_entry) {
 	$plugin_data = get_plugin_data(__FILE__);
 	$block_entry->block_init($plugin_data['TextDomain'], __FILE__);
 });
+
+//アクセスカウンターのセット
+add_action('template_redirect', array($block_access, 'set_post_count'));
 
 function itmar_post_blocks_front()
 {
@@ -56,10 +60,47 @@ function itmar_post_blocks_front()
 			filemtime($script_path),
 			true
 		);
+		if (is_singular()) {
+			global $post;
+			$slug = $post->post_name;
+
+			// JavaScriptにスラッグを渡す
+			wp_localize_script('post_front_handle', 'itmar_post_option', array(
+				'slug' => $slug,
+			));
+		}
 	}
 }
 
 add_action('enqueue_block_assets', 'itmar_post_blocks_front');
+
+//シングルページのデータ取得のためのカスタムエンドポイント
+add_action('rest_api_init', function () {
+	register_rest_route('itmar-rest-api/v1', '/single-post', [
+		'methods' => 'GET',
+		'callback' => function () {
+			// 現在の投稿を取得
+			global $post;
+			if (is_single() && isset($post)) {
+				$post_id = $post->ID;
+
+				// 投稿データを取得
+				$post_data = get_post($post_id);
+
+				if ($post_data) {
+					return [
+						'id'      => $post_data->ID,
+						'title'   => $post_data->post_title,
+					];
+				}
+			}
+
+			return new WP_Error('no_post', '投稿が見つかりません', ['status' => 404]);
+		},
+		'permission_callback' => '__return_true',
+	]);
+});
+
 
 //検索のためのカスタムエンドポイント
 add_action('rest_api_init', function () {
@@ -72,7 +113,7 @@ add_action('rest_api_init', function () {
 
 function itmar_search_endpoint($request)
 {
-	global $wpdb;
+	//global $wpdb;
 	//各種パラメータの取得
 	$search_term = $request->get_param('search');
 	$post_type = $request->get_param('post_type') ? $request->get_param('post_type') : 'post';
@@ -220,7 +261,7 @@ function itmar_search_endpoint($request)
 				'type' => get_post_type(),
 				'link' => get_permalink(),
 				'title' => array('rendered' => get_the_title()),
-				'content' => array('rendered' => apply_filters('the_content', get_the_content())),
+				//'content' => array('rendered' => apply_filters('the_content', get_the_content())),
 				'excerpt' => array('rendered' => get_the_excerpt()),
 				'author' => (int) get_the_author_meta('ID'),
 				'featured_media' => get_post_thumbnail_id($post_id),

@@ -1,12 +1,22 @@
 === Post Blocks ===
-Contributors:      WebクリエイターITmaroon
-Tags:              block
-Tested up to:      6.6.2
+Contributors:      Web Creator ITmaroon
+Tags:              block, post, taxsonomy, field
+Requires at least: 6.3
+Tested up to:      6.7
 Stable tag:        0.1.0
 License:           GPL-2.0-or-later
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
+Requires PHP: 8.2.10
 
-WordPressの投稿を表示するブロック集です
+This is a collection of blocks that display WordPress posts. It includes blocks for selectively displaying posts, setting selection, pagination, and displaying settings.
+
+== Related Links ==
+
+* [post-blocks:Github](https://github.com/itmaroon/post-blocks)
+* [block-class-package:GitHub](https://github.com/itmaroon/block-class-package)  
+* [block-class-package:Packagist](https://packagist.org/packages/itmar/block-class-package) 
+* [itmar-block-packages:npm](https://www.npmjs.com/package/itmar-block-packages)  
+* [itmar-block-packages:GitHub](https://github.com/itmaroon/itmar-block-packages)
 
 == Description ==
 

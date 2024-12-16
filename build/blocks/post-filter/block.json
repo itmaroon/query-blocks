@@ -18,7 +18,8 @@
       "type": "array",
       "default": [
         "search",
-        "date"
+        "date",
+        "popular"
       ]
     },
     "searchFields": {
@@ -28,6 +29,10 @@
     "dateOption": {
       "type": "string",
       "default": "month"
+    },
+    "popNum": {
+      "type": "number",
+      "default": 3
     },
     "groupBlockAttributes": {
       "type": "object",

@@ -11,6 +11,7 @@ import {
 	ToggleControl,
 	SelectControl,
 	RangeControl,
+	RadioControl,
 } from "@wordpress/components";
 
 import { useEffect, useState, useCallback } from "@wordpress/element";
@@ -57,6 +58,7 @@ const flattenBlocks = (blocks) => {
 
 export default function Edit({ attributes, setAttributes, clientId }) {
 	const {
+		pageType,
 		selectedBlockId,
 		//currentPage,
 		dispOfItems,
@@ -66,6 +68,8 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		dummyBlockAttributes,
 		forwardBlockAttributes,
 		backBlockAttributes,
+		forwardTitleAttributes,
+		backTitleAttributes,
 	} = attributes;
 
 	// dispatch関数を取得
@@ -79,9 +83,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		template: TEMPLATE,
 		templateLock: false,
 	});
-
-	//モバイルの判定
-	const isMobile = useIsIframeMobile();
 
 	//エディタ内ブロックの取得
 	const { targetBlocks, innerBlocks } = useSelect(
@@ -148,14 +149,21 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			//ボタン属性を記録
 			innerBlocks[0].innerBlocks.forEach((block, index) => {
 				//ブロックの属性を記録
-				const buttonBlockAttributes =
-					block.attributes.className === "itmar_design_number_btn"
-						? { numBlockAttributes: block.attributes }
-						: block.attributes.className === "itmar_design_dummy_btn"
-						? { dummyBlockAttributes: block.attributes }
-						: block.attributes.className === "itmar_design_prev_btn"
-						? { forwardBlockAttributes: block.attributes }
-						: { backBlockAttributes: block.attributes };
+				const buttonBlockAttributes = block.attributes.className.includes(
+					"itmar_design_number_btn",
+				)
+					? { numBlockAttributes: block.attributes }
+					: block.attributes.className.includes("itmar_design_dummy_btn")
+					? { dummyBlockAttributes: block.attributes }
+					: block.attributes.className.includes("itmar_design_prev_btn")
+					? { forwardBlockAttributes: block.attributes }
+					: block.attributes.className.includes("itmar_design_back_btn")
+					? { backBlockAttributes: block.attributes }
+					: block.attributes.className.includes("itmar_design_prev_title")
+					? { forwardTitleAttributes: block.attributes }
+					: block.attributes.className.includes("itmar_design_back_title")
+					? { backTitleAttributes: block.attributes }
+					: {};
 
 				setAttributes(buttonBlockAttributes);
 			});
@@ -166,55 +174,62 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	//トータルの投稿数と表示数を取得
 	const [currentPage, setCurrentPage] = useState(0);
 	useEffect(() => {
-		if (!allIsClickFalse) {
-			//isClickにtrueが含まれるとき
-			//トータルのページ数を算出
-			const totalPages = Math.ceil(selectedPostTotal / selectedDispNum);
-			//カレントページにすべきページ
-			let setPage = 0;
-			const isClickArray = innerBlocks[0].innerBlocks.map(
-				(block) => block.attributes.isClick,
-			);
-			//クリックされたブロック
-			const clickBlock = innerBlocks[0].innerBlocks[isClickArray.indexOf(true)];
+		if (pageType === "pagenation") {
+			if (!allIsClickFalse) {
+				//isClickにtrueが含まれるとき
+				//トータルのページ数を算出
+				const totalPages = Math.ceil(selectedPostTotal / selectedDispNum);
+				//カレントページにすべきページ
+				let setPage = 0;
+				const isClickArray = innerBlocks[0].innerBlocks.map(
+					(block) => block.attributes.isClick,
+				);
+				//クリックされたブロック
+				const clickBlock =
+					innerBlocks[0].innerBlocks[isClickArray.indexOf(true)];
 
-			//クリックされたブロックのクラス名によってカレントにするページを決定
-			if (clickBlock.attributes.className === "itmar_design_number_btn") {
-				setPage = Number(clickBlock.attributes.labelContent) - 1;
-			} else if (clickBlock.attributes.className === "itmar_design_prev_btn") {
-				if (totalPages > currentPage + 1) {
-					setPage = currentPage + 1;
-				} else {
-					setPage = currentPage;
+				//クリックされたブロックのクラス名によってカレントにするページを決定
+				if (clickBlock.attributes.className === "itmar_design_number_btn") {
+					setPage = Number(clickBlock.attributes.labelContent) - 1;
+				} else if (
+					clickBlock.attributes.className === "itmar_design_prev_btn"
+				) {
+					if (totalPages > currentPage + 1) {
+						setPage = currentPage + 1;
+					} else {
+						setPage = currentPage;
+					}
+				} else if (
+					clickBlock.attributes.className === "itmar_design_back_btn"
+				) {
+					if (currentPage > 0) {
+						setPage = currentPage - 1;
+					} else {
+						setPage = currentPage;
+					}
 				}
-			} else if (clickBlock.attributes.className === "itmar_design_back_btn") {
-				if (currentPage > 0) {
-					setPage = currentPage - 1;
-				} else {
-					setPage = currentPage;
+				//カレントページの変更
+				//setAttributes({ currentPage: setPage });
+
+				setCurrentPage(setPage);
+
+				//post-pickupのカレントページの変更
+				if (pickup) {
+					updateBlockAttributes(pickup.clientId, {
+						currentPage: setPage,
+					});
 				}
-			}
-			//カレントページの変更
-			//setAttributes({ currentPage: setPage });
-
-			setCurrentPage(setPage);
-
-			//post-pickupのカレントページの変更
-			if (pickup) {
-				updateBlockAttributes(pickup.clientId, {
-					currentPage: setPage,
+				//design-buttonのクリック関連属性変更
+				innerBlocks[0].innerBlocks.forEach((block, index) => {
+					const changeAttributes =
+						(block.attributes.className === "itmar_design_number_btn" &&
+							Number(block.attributes.labelContent) - 1 == setPage) ||
+						block.attributes.className === "itmar_design_dummy_btn"
+							? { isClick: false, disabled: true }
+							: { isClick: false, disabled: false };
+					updateBlockAttributes(block.clientId, changeAttributes);
 				});
 			}
-			//design-buttonのクリック関連属性変更
-			innerBlocks[0].innerBlocks.forEach((block, index) => {
-				const changeAttributes =
-					(block.attributes.className === "itmar_design_number_btn" &&
-						Number(block.attributes.labelContent) - 1 == setPage) ||
-					block.attributes.className === "itmar_design_dummy_btn"
-						? { isClick: false, disabled: true }
-						: { isClick: false, disabled: false };
-				updateBlockAttributes(block.clientId, changeAttributes);
-			});
 		}
 	}, [allIsClickFalse]);
 
@@ -270,136 +285,171 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			const totalPages = Math.ceil(selectedPostTotal / selectedDispNum);
 			//totalPagesが２ページ以上
 			if (totalPages > 1) {
-				//ボタンの配列
+				//ブロックの配列
 				const innerBlocksArray = [];
-				//デフォルトの共通ボタン形状
-				const commonDefStyle = {
-					default_pos: {
-						width: "3em",
-						height: "3em",
-						margin_value: {
-							top: "10px",
-							left: "10px",
-							bottom: "10px",
-							right: "10px",
+				//表示タイプがページネーション
+				if (pageType === "pagenation") {
+					//デフォルトの共通ボタン形状
+					const commonDefStyle = {
+						default_pos: {
+							width: "3em",
+							height: "3em",
+							margin_value: {
+								top: "10px",
+								left: "10px",
+								bottom: "10px",
+								right: "10px",
+							},
+							padding_value: {
+								top: "10px",
+								left: "10px",
+								bottom: "10px",
+								right: "10px",
+							},
 						},
-						padding_value: {
-							top: "10px",
-							left: "10px",
-							bottom: "10px",
-							right: "10px",
+						mobile_pos: {
+							width: "2em",
+							height: "2em",
+							margin_value: {
+								top: "10px",
+								left: "0",
+								bottom: "10px",
+								right: "0",
+							},
+							padding_value: {
+								top: "10px",
+								left: "10px",
+								bottom: "10px",
+								right: "10px",
+							},
 						},
-					},
-					mobile_pos: {
-						width: "2em",
-						height: "2em",
-						margin_value: {
-							top: "10px",
-							left: "0",
-							bottom: "10px",
-							right: "0",
+						radius_value: {
+							value: "50%",
 						},
-						padding_value: {
-							top: "10px",
-							left: "10px",
-							bottom: "10px",
-							right: "10px",
-						},
-					},
-					radius_value: {
-						value: "50%",
-					},
-				};
-				//ダミーボタンの表示フラグ
-				let dummyFlg = false;
-				//ページ数分ボタンを生成
-				for (let index = 0; index < totalPages; index++) {
-					//カレントページを軸にページ番号ボタンを生成
-					let forwardNum = currentPage - (Math.ceil((dispOfItems - 2) / 2) - 1);
-					let backNum = currentPage + (Math.ceil((dispOfItems - 2) / 2) - 1);
-					if (dispOfItems % 2 == 0) {
-						//偶数の時は後ろに幅を持たせる
-						backNum++;
-					}
-					if (forwardNum <= 0) {
-						//0ページより前ならbackNumに回す
-						backNum += forwardNum * -1 + 1;
-						forwardNum = 1;
-					}
-					if (backNum >= totalPages - 1) {
-						//トータルページのページ数を超えたら超えた分をforwardNumに回す
-						forwardNum -= backNum - totalPages + 2;
-						backNum = totalPages - 2;
-					}
+					};
+					//ダミーボタンの表示フラグ
+					let dummyFlg = false;
+					//ページ数分ボタンを生成
+					for (let index = 0; index < totalPages; index++) {
+						//カレントページを軸にページ番号ボタンを生成
+						let forwardNum =
+							currentPage - (Math.ceil((dispOfItems - 2) / 2) - 1);
+						let backNum = currentPage + (Math.ceil((dispOfItems - 2) / 2) - 1);
+						if (dispOfItems % 2 == 0) {
+							//偶数の時は後ろに幅を持たせる
+							backNum++;
+						}
+						if (forwardNum <= 0) {
+							//0ページより前ならbackNumに回す
+							backNum += forwardNum * -1 + 1;
+							forwardNum = 1;
+						}
+						if (backNum >= totalPages - 1) {
+							//トータルページのページ数を超えたら超えた分をforwardNumに回す
+							forwardNum -= backNum - totalPages + 2;
+							backNum = totalPages - 2;
+						}
 
-					if (
-						index == currentPage ||
-						index == 0 ||
-						index + 1 == totalPages ||
-						(index >= forwardNum && index <= backNum)
-					) {
-						//表示ページが最終ページの一つより前か、最終ページの時
-						const setNumAttributes = {
-							className: "itmar_design_number_btn",
-							align: "center",
-							...commonDefStyle,
-							disableButtonColor: "var(--wp--preset--color--placeholder)",
-							...numBlockAttributes, //ユーザー設定を優先
-							labelContent: String(index + 1),
-							disabled: currentPage === index, //currentPageとindexが一致したらdisabledをオン
-						};
-						innerBlocksArray.push(
-							createBlock("itmar/design-button", setNumAttributes),
-						);
-						dummyFlg = false; //ダミーフラグを下す
-					} else {
-						if (!dummyFlg) {
-							//ダミーをプッシュしていないとき
-							const setDummyAttributes = {
-								className: "itmar_design_dummy_btn",
-								labelContent: "...",
+						if (
+							index == currentPage ||
+							index == 0 ||
+							index + 1 == totalPages ||
+							(index >= forwardNum && index <= backNum)
+						) {
+							//表示ページが最終ページの一つより前か、最終ページの時
+							const setNumAttributes = {
+								className: "itmar_design_number_btn",
 								align: "center",
 								...commonDefStyle,
-								disableButtonColor: "var(--wp--preset--color--background)",
-								...dummyBlockAttributes, //ユーザー設定を優先
-								disabled: true, //disabledをオン
+								disableButtonColor: "var(--wp--preset--color--placeholder)",
+								...numBlockAttributes, //ユーザー設定を優先
+
+								labelContent: String(index + 1),
+								disabled: currentPage === index, //currentPageとindexが一致したらdisabledをオン
 							};
 							innerBlocksArray.push(
-								createBlock("itmar/design-button", setDummyAttributes),
+								createBlock("itmar/design-button", setNumAttributes),
 							);
-							dummyFlg = true; //ダミーフラグを立てる
+							dummyFlg = false; //ダミーフラグを下す
+						} else {
+							if (!dummyFlg) {
+								//ダミーをプッシュしていないとき
+								const setDummyAttributes = {
+									className: "itmar_design_dummy_btn",
+									labelContent: "...",
+									align: "center",
+									...commonDefStyle,
+									disableButtonColor: "var(--wp--preset--color--background)",
+									...dummyBlockAttributes, //ユーザー設定を優先
+
+									disabled: true, //disabledをオン
+								};
+								innerBlocksArray.push(
+									createBlock("itmar/design-button", setDummyAttributes),
+								);
+								dummyFlg = true; //ダミーフラグを立てる
+							}
 						}
 					}
-				}
-				//矢印用ボタンを挿入
-				if (isArrowButton) {
+					//矢印用ボタンを挿入
+					if (isArrowButton) {
+						const setPrevAttributes = {
+							className: "itmar_design_prev_btn",
+							displayType: "pseudo",
+							pseudoInfo: { element: "Arrow", option: "right" },
+							...commonDefStyle,
+							...forwardBlockAttributes, //ユーザー設定が最優先
+						};
+						const forwardButton = createBlock(
+							"itmar/design-button",
+							setPrevAttributes,
+						);
+						const setBackAttributes = {
+							className: "itmar_design_back_btn",
+							displayType: "pseudo",
+							pseudoInfo: { element: "Arrow", option: "left" },
+							...commonDefStyle,
+							...backBlockAttributes, //ユーザー設定が最優先
+						};
+						const backButton = createBlock(
+							"itmar/design-button",
+							setBackAttributes,
+						);
+
+						innerBlocksArray.push(forwardButton);
+						innerBlocksArray.unshift(backButton);
+					}
+				} else if (pageType === "backFoward") {
+					const commonDefStyle = {
+						headingType: "H3",
+					};
 					const setPrevAttributes = {
-						className: "itmar_design_prev_btn",
-						displayType: "pseudo",
-						pseudoInfo: { element: "Arrow", option: "right" },
+						className: "itmar_design_prev_title",
+						headingContent: __("Back", "post-blocks"),
+						linkKind: "free",
 						...commonDefStyle,
-						...forwardBlockAttributes, //ユーザー設定が最優先
+						...forwardTitleAttributes, //ユーザー設定が最優先
 					};
 					const forwardButton = createBlock(
-						"itmar/design-button",
+						"itmar/design-title",
 						setPrevAttributes,
 					);
 					const setBackAttributes = {
-						className: "itmar_design_back_btn",
-						displayType: "pseudo",
-						pseudoInfo: { element: "Arrow", option: "left" },
+						className: "itmar_design_back_title",
+						headingContent: __("Forward", "post-blocks"),
+						linkKind: "free",
 						...commonDefStyle,
-						...backBlockAttributes, //ユーザー設定が最優先
+						...backTitleAttributes, //ユーザー設定が最優先
 					};
+
 					const backButton = createBlock(
-						"itmar/design-button",
+						"itmar/design-title",
 						setBackAttributes,
 					);
 
 					innerBlocksArray.push(forwardButton);
 					innerBlocksArray.unshift(backButton);
 				}
-
 				//Design Groupに入れてレンダリング
 				//const groupBlockAttr = innerBlocks[0] ? innerBlocks[0].attributes : {};
 				const pagenationBlock = createBlock(
@@ -417,6 +467,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			}
 		}
 	}, [
+		pageType,
 		selectedPostTotal,
 		selectedDispNum,
 		dispOfItems,
@@ -427,39 +478,59 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	return (
 		<>
 			<InspectorControls group="settings">
+				<SelectControl
+					label={__("Select Pickup Posts Block", "post-blocks")}
+					value={selectedBlockId}
+					options={[
+						{ label: __("Select a block", "post-blocks"), value: "" },
+						...pickupPosts.map((block) => ({
+							label: block.attributes.pickupId,
+							value: block.attributes.pickupId,
+						})),
+					]}
+					onChange={(changeOption) => {
+						setAttributes({ selectedBlockId: changeOption });
+					}}
+				/>
 				<PanelBody
-					title={__("Linked Post Block", "post-blocks")}
+					title={__("Block Display Settings", "post-blocks")}
 					initialOpen={true}
 					className="form_setteing_ctrl"
 				>
-					<SelectControl
-						label={__("Select Pickup Posts Block", "post-blocks")}
-						value={selectedBlockId}
-						options={[
-							{ label: __("Select a block", "post-blocks"), value: "" },
-							...pickupPosts.map((block) => ({
-								label: block.attributes.pickupId,
-								value: block.attributes.pickupId,
-							})),
-						]}
-						onChange={(changeOption) => {
-							setAttributes({ selectedBlockId: changeOption });
-						}}
-					/>
-					<ToggleControl
-						label={__("Is Arrow Button", "post-blocks")}
-						checked={isArrowButton}
-						onChange={(newVal) => {
-							setAttributes({ isArrowButton: newVal });
-						}}
-					/>
-					<RangeControl
-						value={dispOfItems}
-						label={__("Page Button Number", "post-blocks")}
-						max={30}
-						min={3}
-						onChange={(val) => setAttributes({ dispOfItems: val })}
-					/>
+					<div className="itmar_select_row">
+						<RadioControl
+							label={__("Display Type", "post-blocks")}
+							selected={pageType}
+							options={[
+								{ label: __("Page Num", "post-blocks"), value: "pagenation" },
+								{
+									label: __("Back Foward", "post-blocks"),
+									value: "backFoward",
+								},
+							]}
+							onChange={(changeOption) =>
+								setAttributes({ pageType: changeOption })
+							}
+						/>
+					</div>
+					{pageType === "pagenation" && (
+						<>
+							<ToggleControl
+								label={__("Is Arrow Button", "post-blocks")}
+								checked={isArrowButton}
+								onChange={(newVal) => {
+									setAttributes({ isArrowButton: newVal });
+								}}
+							/>
+							<RangeControl
+								value={dispOfItems}
+								label={__("Page Button Number", "post-blocks")}
+								max={30}
+								min={3}
+								onChange={(val) => setAttributes({ dispOfItems: val })}
+							/>
+						</>
+					)}
 				</PanelBody>
 			</InspectorControls>
 
