@@ -358,6 +358,7 @@
 				}
 			}
 		},
+		
 		"dayAttributes":{
 			"type":"object",
 			"default":{}

@@ -4,8 +4,11 @@
  *
  * Replace them with your own styles or remove the file completely.
  */
-
+.outer_frame{
+    width: 100%;
+}
 .wp-block-itmar-pickup-posts {
+    width: 100%;
 	.unit_hide{
         visibility: hidden;
     }

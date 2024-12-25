@@ -192,7 +192,70 @@ const addPriodListner = (pickup, fillFlg, dateContainer, name) => {
 		});
 	}
 };
-const ModifyFieldElement = (element, post, blockMap) => {
+//ターム情報と表示用のDOM要素を取得する関数
+const getTermsInfo = (pickup, post, disp_taxonomies) => {
+	// disp_taxonomies に一致するキーを抽出
+	const filteredTerms = Object.fromEntries(
+		Object.entries(post.terms).filter(([key]) => disp_taxonomies.includes(key)),
+	);
+	// term-[キー]-[slug]の配列を生成
+	const result = Object.entries(filteredTerms).flatMap(([key, values]) =>
+		values.map((item) => {
+			//既にあるターム表示のDOM要素をひな型とするために取得
+			const termElement = pickup.querySelectorAll(`[class*="term_${key}"]`)[0];
+			if (termElement) {
+				//ひな型からクローンを生成
+				const cloneTermElm = termElement.cloneNode(true);
+				//ｈタグ内の要素を書き換え
+				const hTags = cloneTermElm.querySelectorAll("h1, h2, h3, h4, h5, h6");
+				hTags.forEach((hTag) => {
+					// h タグ内の <div> 要素を探す
+					const divTag = hTag.querySelector("div");
+					if (divTag) {
+						// <div> のテキストノードを item.name に書き換える
+						divTag.textContent = item.name;
+					}
+				});
+
+				return cloneTermElm;
+			} else {
+				//ひな型がない場合の処理
+				// originalElement が undefined の場合、新しい要素を生成
+				const clonedElement = document.createElement("div");
+				const h2Element = document.createElement("h2");
+				const divElement = document.createElement("div");
+
+				// <div>のテキストノードを item.name に設定
+				divElement.textContent = item.name;
+
+				// <h2>に<div>を追加
+				h2Element.appendChild(divElement);
+
+				// 新しい要素に<h2>を追加
+				clonedElement.appendChild(h2Element);
+				return cloneTermElm;
+			}
+		}),
+	);
+
+	return result;
+};
+//フロントエンドで取得した投稿データで書き換える関数
+const ModifyFieldElement = (element, post, blockMap, dispTermsDom) => {
+	// 最上位要素がa要素の時はそのhref属性を書き換え
+	if (element && element.tagName === "A") {
+		element.setAttribute("href", post.link);
+	}
+	//ターム表示するDOM要素を格納する親要素を取得
+	const termElements = element.querySelectorAll(`[class*="term_"]`);
+	const termParentElement = termElements[0]?.parentElement;
+	if (termParentElement) {
+		// 既存のterm_ クラスの要素を削除
+		termElements.forEach((termElement) => termElement.remove());
+		// 親要素内に dispTermsDom の要素（フロントエンドでダイレクトに読み込んだ情報）を追加
+		dispTermsDom.forEach((dom) => termParentElement.appendChild(dom));
+	}
+
 	// newPostUnitのすべての子要素を取得
 	const allElements = element.getElementsByTagName("*");
 
@@ -428,12 +491,14 @@ const crumbsRender = (posts, pickupId, pickupType, taxRelateType) => {
 const pickupChange = (pickup, fillFlg, currentPage = 0) => {
 	const pickupId = pickup.dataset.pickup_id;
 	const pickupType = pickup.dataset.pickup_type;
+	const pickupQury = pickup.dataset.pickup_query;
 	const numberOfItems = pickup.dataset.number_of_items;
 	//const selectedRest = pickup.dataset.selected_rest;
 	const selectedSlug = pickup.dataset.selected_slug;
 	const taxRelateType = pickup.dataset.tax_relate_type;
 	const searchFields = JSON.parse(pickup.dataset.search_fields); //検索対象のカスタムフィールド
 	const choiceFields = JSON.parse(pickup.dataset.choice_fields);
+	const dispTaxonomies = JSON.parse(pickup.dataset.disp_taxonomies);
 	const blockMap = JSON.parse(pickup.dataset.block_map);
 
 	//タームのセレクトオブジェクト
@@ -488,16 +553,27 @@ const pickupChange = (pickup, fillFlg, currentPage = 0) => {
 	history.pushState(null, "", currentUrl);
 
 	//全体のクエリオブジェクト
-	const query = {
-		search: searchKeyWord,
-		custom_fields: choiceFields,
-		search_fields: searchFields,
-		post_type: selectedSlug,
-		per_page: pickupType === "multi" ? numberOfItems : -1,
-		page: currentPage + 1,
-		...selectTerms,
-		...periodQueryObj,
-	};
+	const query =
+		pickupQury === "nomal"
+			? {
+					search: searchKeyWord,
+					custom_fields: choiceFields,
+					search_fields: searchFields,
+					post_type: selectedSlug,
+					per_page: pickupType === "multi" ? numberOfItems : -1,
+					page: currentPage + 1,
+					...selectTerms,
+					...periodQueryObj,
+			  }
+			: {
+					custom_fields: choiceFields,
+					post_type: selectedSlug,
+					per_page: numberOfItems,
+					...selectTerms,
+					meta_key: "view_counter",
+					orderby: "meta_value_num",
+					order: "desc", // 降順 (アクセス数の多い順)
+			  };
 
 	//カスタムエンドポイントから投稿データを取得
 	getSearchRecordsFromAPI(query)
@@ -530,8 +606,15 @@ const pickupChange = (pickup, fillFlg, currentPage = 0) => {
 				if (!posts[index]) {
 					divs.style.display = "none"; // 要素を非表示にする
 				} else {
+					//ターム表示のためのDOM要素の配列
+					const dispTermsDom = getTermsInfo(
+						pickup,
+						posts[index],
+						dispTaxonomies,
+					);
+
 					//レンダリング指定のあるフィールドの内容をpostの内容によって書き換え
-					ModifyFieldElement(divs, posts[index], blockMap);
+					ModifyFieldElement(divs, posts[index], blockMap, dispTermsDom);
 					divs.style.display = "block"; // 要素を再表示する
 				}
 			});

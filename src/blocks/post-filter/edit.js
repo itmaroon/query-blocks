@@ -12,7 +12,6 @@ import {
 	SelectControl,
 	RadioControl,
 	CheckboxControl,
-	RangeControl,
 	__experimentalNumberControl as NumberControl,
 } from "@wordpress/components";
 
@@ -48,7 +47,6 @@ const units = [
 const builtin_items = [
 	{ value: "search", label: __("Search", "post-blocks") },
 	{ value: "date", label: __("Date", "post-blocks") },
-	{ value: "popular", label: __("Popularity", "post-blocks") },
 ];
 
 //ネストしたブロックを平坦化
@@ -102,7 +100,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		searchFields,
 		dateOption,
 		dateSpan,
-		popNum,
 		groupBlockAttributes,
 		filterGroupAttributes,
 		titleAttributes,
@@ -326,6 +323,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 
 					filterBlocksArray.push(searchGroup);
 				}
+
 				//フィルタアイテムが日付のとき
 				if (filterItem.value === "date") {
 					const monthArray = generateDateArray(dateSpan, true);
@@ -648,10 +646,10 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 
 	//フィルタ要素をタクソノミーのフィルタと、日付・検索のフィルタに分離
 	const taxFilters = filterItems.filter(
-		(filter) => !["date", "search", "popular"].includes(filter.value),
+		(filter) => !["date", "search"].includes(filter.value),
 	);
 	const specialFilters = filterItems.filter((filter) =>
-		["date", "search", "popular"].includes(filter.value),
+		["date", "search"].includes(filter.value),
 	);
 
 	//フィルタの選択に使用するチェックボックス
@@ -739,8 +737,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 								? __("Date filter Setting", "post-blocks")
 								: filter.value === "search"
 								? __("Search filter Setting", "post-blocks")
-								: filter.value === "popular"
-								? __("Popularity filter Setting", "post-blocks")
 								: "";
 						return (
 							<PanelBody
@@ -927,15 +923,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 											</PanelRow>
 										</>
 									)}
-								{filter.value === "popular" && isChecked && (
-									<RangeControl
-										value={popNum}
-										label={__("Display Popularity", "post-blocks")}
-										max={10}
-										min={1}
-										onChange={(val) => setAttributes({ popNum: val })}
-									/>
-								)}
 							</PanelBody>
 						);
 					})}

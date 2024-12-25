@@ -51,32 +51,6 @@ const flattenBlocks = (blocks) => {
 	}, []);
 };
 
-// //タームの文字列化
-// const termToDispObj = (terms) => {
-// 	// taxonomyごとにterm.nameをまとめる
-// 	const result = terms.reduce((acc, item) => {
-// 		const taxonomy = item.taxonomy;
-// 		const termName = item.term.name;
-
-// 		// taxonomyがまだ存在しない場合は初期化
-// 		if (!acc[taxonomy]) {
-// 			acc[taxonomy] = [];
-// 		}
-
-// 		// term.nameを配列に追加
-// 		acc[taxonomy].push(termName);
-
-// 		return acc;
-// 	}, {});
-
-// 	// 各taxonomyの配列を || でつなげて文字列化
-// 	for (const taxonomy in result) {
-// 		result[taxonomy] = result[taxonomy].join(" || ");
-// 	}
-
-// 	return result;
-// };
-
 export default function Edit({ attributes, setAttributes, clientId }) {
 	const { selectedBlockId, groupBlockAttributes, crumbBlockAttributes } =
 		attributes;

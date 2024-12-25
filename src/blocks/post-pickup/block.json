@@ -17,7 +17,10 @@
 			"type": "string",
 			"default": "multi"
 		},
-		
+		"pickupQuery":{
+			"type": "string",
+			"default": "nomal"
+		},
 		"numberOfItems": {
 			"type": "number",
 			"default": 3
@@ -49,6 +52,10 @@
 		"choiceTerms":{
 			"type": "array",
 			"default": []
+		},
+		"dispTaxonomies":{
+			"type":"array",
+			"default":[]
 		},
 		"choiceFields":{
 			"type": "array",

@@ -4,18 +4,18 @@
  *
  * Replace them with your own styles or remove the file completely.
  */
-.block-library-block__reusable-block-container {
+.outer_frame {
   width: 100%;
 }
 
-.wp-block-itmar-post-filter {
-  box-sizing: border-box;
+.wp-block-itmar-pickup-posts {
   width: 100%;
 }
-.wp-block-itmar-post-filter input[type=text] {
-  width: 100%;
+.wp-block-itmar-pickup-posts .unit_hide {
+  visibility: hidden;
 }
-.wp-block-itmar-post-filter .error {
-  color: var(--wp--preset--color--err-message);
+
+.wp-block-itmar-slide-mv .unit_hide {
+  visibility: hidden;
 }
 /*# sourceMappingURL=style.css.map */

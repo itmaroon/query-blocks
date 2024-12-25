@@ -19,7 +19,7 @@ import {
 	Notice,
 	RangeControl,
 	TextControl,
-	ToggleControl,
+	SelectControl,
 } from "@wordpress/components";
 import { useEffect, useState, useRef } from "@wordpress/element";
 import { createBlock } from "@wordpress/blocks";
@@ -190,10 +190,12 @@ const hasMatchingClassName = (
 	// classNameから"field_"が付いているクラス名を抽出
 	const fieldClasses = className
 		.split(" ")
-		.filter((cls) => cls.startsWith("field_"));
+		.filter((cls) => cls.startsWith("field_") || cls.startsWith("term_"));
 
 	// 抽出したクラス名から"field_"を取り除く
-	const classNames = fieldClasses.map((cls) => cls.replace("field_", ""));
+	const classNames = fieldClasses.map((cls) =>
+		cls.replace(/^(field_|term_)/, ""),
+	);
 
 	// クラス名が存在すればtrueをかえす
 	for (const className of classNames) {
@@ -239,7 +241,7 @@ const hasMatchingClassName = (
 };
 
 //クラス名にfield_が含まれるblockObjectからフィールド名と値を返す関数
-const FieldClassNameObj = (blockObject) => {
+const FieldClassNameObj = (blockObject, fieldKind) => {
 	// blockObjectがundefinedまたはnullの場合はfalseを返す
 	if (!blockObject) {
 		return [];
@@ -256,14 +258,14 @@ const FieldClassNameObj = (blockObject) => {
 	// classNameから"field_"が付いているクラス名を抽出
 	const fieldClasses = className
 		.split(" ")
-		.filter((cls) => cls.startsWith("field_"));
+		.filter((cls) => cls.startsWith(fieldKind));
 
 	// 抽出したクラス名から"field_"を取り除く
-	const classNames = fieldClasses.map((cls) => cls.replace("field_", ""));
+	const classNames = fieldClasses.map((cls) => cls.replace(fieldKind, ""));
 	// innerBlocksが存在する場合は、再帰的に探索
 	if (blockObject.innerBlocks && blockObject.innerBlocks.length > 0) {
 		const innerClassNames = blockObject.innerBlocks.flatMap((innerBlock) => {
-			return FieldClassNameObj(innerBlock);
+			return FieldClassNameObj(innerBlock, fieldKind);
 		});
 		return [...classNames, ...innerClassNames];
 	}
@@ -285,12 +287,17 @@ const FieldClassNameObj = (blockObject) => {
 };
 
 //選択したフィールドにないブロックを削除する関数
-const removeNonMatchingClassName = (blockObject, choiceFields) => {
+const removeNonMatchingClassName = (
+	blockObject,
+	choiceFields,
+	dispTaxonomies,
+	terms,
+	blockMap,
+) => {
 	// blockObjectがundefinedまたはnullの場合は何もしない
 	if (!blockObject) {
 		return;
 	}
-
 	// blockObject.attributesがundefinedまたはnullの場合は何もしない
 	if (!blockObject.attributes) {
 		return;
@@ -305,26 +312,40 @@ const removeNonMatchingClassName = (blockObject, choiceFields) => {
 	}
 
 	const newBlockObject = { ...blockObject }; // 新しいオブジェクトを作成
-
-	// classNameから"field_"が付いているクラス名を抽出
+	// classNameから"field_""term_"が付いているクラス名を抽出
 	const fieldClasses = className
 		.split(" ")
-		.filter((cls) => cls.startsWith("field_"));
+		.filter((cls) => cls.startsWith("field_") || cls.startsWith("term_"));
 
-	// 抽出したクラス名から"field_"を取り除く
-	const fields = fieldClasses.map((cls) => cls.replace("field_", ""));
+	// 抽出したクラス名から"field_""term_"を取り除く
+	const fields = fieldClasses.map((cls) => cls.replace(/^(field_|term_)/, ""));
 	// fieldsを一つずつ取り出して、choiceFieldsに含まれていない場合はblockObjectを削除
 
 	for (const field of fields) {
 		let containsField = false;
 		for (const choiceField of choiceFields) {
-			if (choiceField.includes(field)) {
+			//フィールド名を含むblockMapのキー名を取得(グループ名を含めた検索)
+			const foundKey = Object.keys(blockMap).find((key) => key.includes(field));
+			if (choiceField.includes(field) && foundKey && blockMap[foundKey]) {
+				//選択フィールドを含むブロック内のクラス名に選択フィールド名があり、blockMapにブロックの定義がある
 				containsField = true;
 				break;
 			}
-		}
+			//表示設定があるタクソノミー名、ターム名を取り出し
+			const match = field.trim().match(/^(.*?)_(.*?)$/);
 
+			if (match && dispTaxonomies.includes(match[1])) {
+				//投稿に設定されたタームがある
+				const termArray = terms[match[1]];
+				if (termArray.some((item) => item.slug === match[2])) {
+					containsField = true;
+					break;
+				}
+			}
+		}
+		//blockObjectを削除
 		if (!containsField) {
+			//ブロックを返さない
 			return null;
 		}
 	}
@@ -332,10 +353,17 @@ const removeNonMatchingClassName = (blockObject, choiceFields) => {
 	// innerBlocksが存在する場合は、再帰的に探索
 	if (newBlockObject.innerBlocks && newBlockObject.innerBlocks.length > 0) {
 		newBlockObject.innerBlocks = newBlockObject.innerBlocks
-			.map((innerBlock) => removeNonMatchingClassName(innerBlock, choiceFields))
+			.map((innerBlock) =>
+				removeNonMatchingClassName(
+					innerBlock,
+					choiceFields,
+					dispTaxonomies,
+					terms,
+					blockMap,
+				),
+			)
 			.filter((innerBlock) => innerBlock !== null);
 	}
-
 	return newBlockObject;
 };
 
@@ -360,8 +388,9 @@ const searchFieldObjects = (obj, fieldKey) => {
 };
 
 //コピーした属性にブロックエディタ上の投稿内容を維持してマージする関数
-const mergeBlocks = (fieldArray, changeBlock) => {
+const mergeBlocks = (fieldArray, termArray, changeBlock) => {
 	if (!changeBlock) return null;
+
 	const { blockName, attributes, innerBlocks } = changeBlock;
 	// attributesをprocessedAttributesにコピー
 	const processedAttributes = { ...attributes };
@@ -406,10 +435,28 @@ const mergeBlocks = (fieldArray, changeBlock) => {
 		}
 	}
 
+	// className の確認とterm_以降の文字列の抽出
+	const termClass =
+		processedAttributes.className &&
+		typeof processedAttributes.className === "string" &&
+		processedAttributes.className
+			.split(" ")
+			.find((cls) => cls.startsWith("term_"));
+	if (termClass) {
+		//コピー先にコピー元のタームブロックと同じクラス名をもつブロックがあるか
+		const isTermIncluded = termArray.some((term) =>
+			termClass.includes(term.fieldName),
+		);
+		//ブロックがなければコピーしない
+		if (!isTermIncluded) {
+			return;
+		}
+	}
+
 	// インナーブロックを再帰的に生成
 	const newInnerBlocks = Array.isArray(innerBlocks)
 		? innerBlocks
-				.map((innerBlock) => mergeBlocks(fieldArray, innerBlock))
+				.map((innerBlock) => mergeBlocks(fieldArray, termArray, innerBlock))
 				.filter(Boolean)
 		: [];
 	// 新しいブロックを生成して返す
@@ -433,9 +480,11 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	const {
 		pickupId,
 		pickupType,
+		pickupQuery,
 		selectedSlug,
 		selectedRest,
 		choiceTerms,
+		dispTaxonomies,
 		taxRelateType,
 		choiceFields,
 		choicePeriod,
@@ -452,8 +501,13 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	} = attributes;
 
 	// dispatch関数を取得
-	const { replaceInnerBlocks, insertBlocks, removeBlocks, removeBlock } =
-		useDispatch("core/block-editor");
+	const {
+		replaceInnerBlocks,
+		insertBlocks,
+		removeBlocks,
+		removeBlock,
+		updateBlockAttributes,
+	} = useDispatch("core/block-editor");
 	//削除したブロックのclientIdの配列の参照
 	const deletedClientIdsRef = useRef(new Set());
 	//blocksAttributesArrayの参照
@@ -478,7 +532,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	};
 
 	//RestAPIでpostを取得する
-	//const [posts, setPosts] = useState([]);
 	const fetchSearch = async (
 		keyWord,
 		taxonomyTerms,
@@ -509,7 +562,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 
 			console.log(data);
 
-			//setPosts(data.posts);
 			setAttributes({ posts: data.posts, numberOfTotal: data.total });
 			// データの処理
 		} catch (error) {
@@ -517,25 +569,48 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		}
 	};
 
-	// useEffect(async () => {
-	// 	const singleResponse = await fetch(
-	// 		`${post_blocks.home_url}/wp-json/itmar-rest-api/v1/single-post`,
-	// 	);
-	// 	const singleData = await singleResponse.json();
-	// 	console.log(singleData);
-	// }, []);
+	const fetchPopular = async (choiceFields, taxonomyTerms) => {
+		const query = {
+			custom_fields: choiceFields,
+			post_type: selectedSlug,
+			per_page: numberOfItems,
+			...taxonomyTerms,
+			meta_key: "view_counter",
+			orderby: "meta_value_num",
+			order: "desc", // 降順 (アクセス数の多い順)
+		};
 
+		const queryString = new URLSearchParams(query).toString();
+
+		try {
+			const response = await fetch(
+				`${post_blocks.home_url}/wp-json/itmar-rest-api/v1/search?${queryString}`,
+			);
+			const data = await response.json();
+
+			console.log(data);
+
+			setAttributes({ posts: data.posts, numberOfTotal: data.total });
+			// データの処理
+		} catch (error) {
+			console.error("Failed to fetch posts:", error);
+		}
+	};
+
+	//投稿データの取得処理
 	useEffect(() => {
 		//ポストタイプの指定がないときは処理しない
 		if (selectedSlug) {
-			//RestAPIでpostを取得する
-			fetchSearch(
-				searchWord,
-				getSelectedTaxonomyTerms(),
-				getPeriodQuery(choicePeriod),
-				choiceFields,
-				searchFields,
-			);
+			if (pickupQuery === "nomal") {
+				//RestAPIでpostを取得する
+				fetchSearch(
+					searchWord,
+					getSelectedTaxonomyTerms(),
+					getPeriodQuery(choicePeriod),
+					choiceFields,
+					searchFields,
+				);
+			}
 		}
 	}, [
 		pickupType,
@@ -549,6 +624,16 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		choiceFields,
 		searchFields,
 	]);
+
+	//人気投稿の取得処理
+	useEffect(() => {
+		//ポストタイプの指定がないときは処理しない
+		if (selectedSlug) {
+			if (pickupQuery === "popular") {
+				fetchPopular(choiceFields, getSelectedTaxonomyTerms());
+			}
+		}
+	}, [numberOfItems, selectedSlug, choiceFields, choiceTerms]);
 
 	useEffect(() => {
 		//ポストタイプの指定がないときは処理しない
@@ -732,18 +817,42 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			//追加するブロック
 			const addBlocks = [];
 
+			//グループのリンク解除処理
+			if (!choiceFields.includes("link")) {
+				updateBlockAttributes(dispAttribute.blockId, {
+					is_link: false,
+					selectedPageUrl: "",
+				});
+			}
+
 			//すでにブロックの属性にフィールドのブロックが登録されているかを検査
 			for (const fieldItem of choiceFields) {
 				//カスタムフィールドの接頭辞をはずす
 				const field = fieldItem.replace(/^(meta_|acf_)/, "");
 				const blockname = blockMap[field];
 				if (!blockname) {
-					continue;
+					//フィールドのチェックはあるが対応するブロックの登録がない
+					if (field === "link") {
+						updateBlockAttributes(dispAttribute.blockId, {
+							is_link: true,
+							selectedPageUrl: post.link ? post.link : "",
+						});
+					}
+					continue; //以下のフィールド処理は実行しない
+				} else {
+					//ブロックがあればグループのリンクは消す
+					if (field === "link") {
+						updateBlockAttributes(dispAttribute.blockId, {
+							is_link: false,
+							selectedPageUrl: "",
+						});
+					}
 				}
 				//グループ名をフィールドから外す
 				const element_field = field.includes(".")
 					? field.substring(field.lastIndexOf(".") + 1)
 					: field;
+
 				if (post) {
 					//element_field値に応じた属性の初期値を生成
 
@@ -838,7 +947,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					}
 
 					//innerBlocksAttributesに指定されたフィールド用ブロックが存在するか。存在したら属性を上書き
-
 					const is_field = hasMatchingClassName(
 						dispAttribute,
 						element_field,
@@ -846,6 +954,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 						blockAttributes,
 						diffIdFlg,
 					);
+
 					if (!is_field) {
 						//登録されていなければinnerBlocksAttributesにフィールド用ブロックを追加
 						const blockname = blockMap[field] || "itmar/design-title";
@@ -855,6 +964,37 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 						});
 					}
 				}
+			}
+			//すでにタームのブロックが登録されているかを検査
+			if (post?.terms) {
+				const taxonomyData = post.terms;
+				dispTaxonomies.forEach((taxonomy) => {
+					if (taxonomyData[taxonomy]) {
+						// タクソノミーが taxonomyData に存在するかチェック
+						taxonomyData[taxonomy].forEach((term) => {
+							const blockAttributes = {
+								className: `term_${taxonomy}_${term.slug}`,
+								headingContent: term.name,
+							};
+							//innerBlocksAttributesに指定されたフィールド用ブロックが存在するか。存在したら属性を上書き
+							const is_field = hasMatchingClassName(
+								dispAttribute,
+								`${taxonomy}_${term.slug}`,
+								"itmar/design-title",
+								blockAttributes,
+								false,
+							);
+
+							if (!is_field) {
+								//登録されていなければinnerBlocksAttributesにフィールド用ブロックを追加
+								addBlocks.push({
+									blockName: "itmar/design-title",
+									attributes: blockAttributes,
+								});
+							}
+						});
+					}
+				});
 			}
 
 			//追加すべきフィールド表示用ブロックがあれば追加
@@ -876,11 +1016,14 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					addBlockobject.innerBlocks.push(...addBlocks);
 				}
 			}
-
 			//選択されていないフィールドのブロックがあれば削除
+
 			const filteredBlockObject = removeNonMatchingClassName(
 				addBlockobject,
 				choiceFields,
+				dispTaxonomies,
+				post?.terms,
+				blockMap,
 			);
 
 			//filteredBlockObjectからreplaceInnerBlocks用のブロックオブジェクトを生成し、インナーブロックをレンダリング
@@ -931,7 +1074,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				// エラーハンドリング
 				console.error("ブロックの解決中にエラーが発生しました:", error);
 			});
-	}, [posts, choiceFields, blockMap]);
+	}, [posts, choiceFields, dispTaxonomies, blockMap]);
 
 	//ペースト対象のチェック配列
 	const [isCopyChecked, setIsCopyChecked] = useState([]);
@@ -969,7 +1112,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			if (unitAttribute.attributes.blockNum == null) return;
 
 			//ブロックに記入された内容を取得
-			const fieldObjs = FieldClassNameObj(unitAttribute);
+			const fieldObjs = FieldClassNameObj(unitAttribute, "field_");
 			if (!fieldObjs || fieldObjs.length < 1) return; //入力フィールドがない場合は処理しない
 
 			// カスタムフィールドとその他のフィールドを分離
@@ -1134,6 +1277,18 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 						}}
 					/>
 
+					<SelectControl
+						label={__("Select Query Type", "post-blocks")}
+						value={pickupQuery}
+						options={[
+							{ label: __("Nomal", "post-blocks"), value: "nomal" },
+							{ label: __("Popular", "post-blocks"), value: "popular" },
+						]}
+						onChange={(changeOption) => {
+							setAttributes({ pickupQuery: changeOption });
+						}}
+					/>
+
 					<div className="itmar_select_row">
 						<RadioControl
 							label={__("Pickup Post Type", "post-blocks")}
@@ -1166,8 +1321,12 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 							type="taxonomy"
 							selectedSlug={selectedSlug}
 							choiceItems={choiceTerms}
+							dispTaxonomies={dispTaxonomies}
 							onChange={(newChoiceTerms) => {
 								setAttributes({ choiceTerms: newChoiceTerms });
+							}}
+							onSetDispTax={(newChoiceTerms) => {
+								setAttributes({ dispTaxonomies: newChoiceTerms });
 							}}
 						/>
 					</PanelBody>
@@ -1237,13 +1396,20 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 												//フィールド表示用のブロックからフィールド名と値を取得
 												const fieldArray = FieldClassNameObj(
 													updatedBlocksAttributes[index],
+													"field_",
 												);
-
+												//フィールド表示用のブロックからフィールド名と値を取得
+												const termArray = FieldClassNameObj(
+													updatedBlocksAttributes[index],
+													"term_",
+												);
 												//新しいブロックのスタイル属性にブロックエディタ上のフィールドの値を戻す
 												const mergedBlock = mergeBlocks(
 													fieldArray,
+													termArray,
 													blocksAttributesArray[noticeClickedIndex],
 												);
+
 												const mergedAttributes =
 													getBlockAttributes(mergedBlock);
 

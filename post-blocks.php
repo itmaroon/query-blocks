@@ -124,6 +124,7 @@ function itmar_search_endpoint($request)
 	$order = $request->get_param('order');
 	$after = $request->get_param('after');
 	$before = $request->get_param('before');
+	$meta_key = $request->get_param('meta_key') ? $request->get_param('meta_key') : null;
 
 	// 選択したカスタムフィールドを取得
 	$choice_fields_prm = $request->get_param('custom_fields');
@@ -155,6 +156,12 @@ function itmar_search_endpoint($request)
 		'post_status' => 'publish',
 		//'apply_custom_search_filter' => true
 	);
+
+	// meta_key が null でない場合に追加
+	if ($meta_key !== null) {
+		$args['meta_key'] = $meta_key;
+	}
+
 
 	// 検索クエリの追加
 	if (!empty($search_term)) {
@@ -273,7 +280,14 @@ function itmar_search_endpoint($request)
 				//'meta' => array(),
 				'categories' => wp_get_post_categories($post_id, array('fields' => 'ids')),
 				'tags' => wp_get_post_tags($post_id, array('fields' => 'ids')),
+				'taxonomies' => get_object_taxonomies(get_post_type($post_id), 'names')
 			);
+
+			// タームの値を追加
+			foreach ($post_data['taxonomies'] as $tax) {
+				$terms = wp_get_post_terms($post_id, $tax);
+				$post_data['terms'][$tax] = $terms;
+			}
 
 			// カスタムフィールドの値を追加
 			foreach ($meta_fields as $field) {
