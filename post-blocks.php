@@ -45,6 +45,18 @@ add_action('init', function () use ($block_entry) {
 	$block_entry->block_init($plugin_data['TextDomain'], __FILE__);
 });
 
+// 依存するプラグインが有効化されているかのアクティベーションフック
+register_activation_hook(__FILE__, function () use ($block_entry) {
+	$plugin_data = get_plugin_data(__FILE__);
+	$block_entry->activation_check($plugin_data, ['block-collections']); // ここでメソッドを呼び出し
+});
+
+// 管理画面での通知フック
+add_action('admin_notices', function () use ($block_entry) {
+	$plugin_data = get_plugin_data(__FILE__);
+	$block_entry->show_admin_dependency_notices($plugin_data, ['block-collections']);
+});
+
 //アクセスカウンターのセット
 add_action('template_redirect', array($block_access, 'set_post_count'));
 

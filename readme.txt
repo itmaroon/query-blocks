@@ -2,7 +2,7 @@
 Contributors:      Web Creator ITmaroon
 Tags:              block, post, taxsonomy, field
 Requires at least: 6.3
-Tested up to:      6.7
+Tested up to:      6.7.1
 Stable tag:        0.1.0
 License:           GPL-2.0-or-later
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
@@ -20,30 +20,51 @@ This is a collection of blocks that display WordPress posts. It includes blocks 
 
 == Description ==
 
-This is the long description. No limit, and you can use Markdown (as well as in the following sections).
+When you install this plugin, the following four blocks are registered and can be used not only in the block editor but also in the site editor (tested with WordPress 6.7).
 
-For backwards compatibility, if this section is missing, the full length of the short description will be used, and
-Markdown parsed.
+Below is a brief description of each block.
+
+1. Post Pickup
+Provides a function to pick up WordPress post data. Internally, it generates a subquery to extract data from the database. The extracted data is selected by selecting the post type and term, and the required fields are rendered by selecting the field. Custom fields can also be selected.
+
+2. Post Filter
+This block provides a UI for users to filter Post Pickups specified by ID. There are three types of filtering:
+- Provides a filtering function by string search. The search targets are title, excerpt, and body text, but custom fields can also be targeted by selecting an option.
+- Provides a filtering function for data posted within a set period. The period can be set to three types: year, month, and day.
+- Provides a filtering function by terms set in posts. The terms to be filtered are selected by selecting the taxonomy associated with the post type.
+
+3. Post Pagination
+This block provides pagination display of Post Pickup specified by ID.
+Two types are available: one that displays the page number and one that moves to the previous or next page. The type that displays the page number has Design Button as an inner block,
+and the type that moves to the previous or next page has Design Title as an inner block.
+Various customizations are possible by utilizing the design functions of these custom blocks.
+
+4. Post Crumbs
+This block displays the filtering information of Post Pickup specified by ID in the form of a breadcrumb list.
+The filtering information is based on filtering by Post Filter and is displayed as the text of Design Title.
+Therefore, various customizations are possible by using the design function of Design Title.
+In addition, when Post Pickup is displayed as a single post, the title of the post is also displayed in addition to the filtering information.
 
 == Installation ==
 
-This section describes how to install the plugin and get it working.
+1. From the WP admin panel, click “Plugins” -> “Add new”.
+2. In the browser input box, type “Post Blocks”.
+3. Select the “Post Blocks” plugin and click “Install”.
+4. Activate the plugin.
 
-e.g.
+OR…
 
-1. Upload the plugin files to the `/wp-content/plugins/post-blocks` directory, or install the plugin through the WordPress plugins screen directly.
-1. Activate the plugin through the 'Plugins' screen in WordPress
+1. Download the plugin from this page.
+2. Save the .zip file to a location on your computer.
+3. Open the WP admin panel, and click “Plugins” -> “Add new”.
+4. Click “upload”.. then browse to the .zip file downloaded from this page.
+5. Click “Install”.. and then “Activate plugin”.
+
 
 
 == Frequently Asked Questions ==
 
-= A question that someone might have =
 
-An answer to that question.
-
-= What about foo bar? =
-
-Answer to foo bar dilemma.
 
 == Screenshots ==
 
@@ -59,7 +80,10 @@ directory take precedence. For example, `/assets/screenshot-1.png` would win ove
 * Release
 
 == Arbitrary section ==
-
-You may provide arbitrary sections, in the same format as the ones above. This may be of use for extremely complicated
-plugins where more information needs to be conveyed that doesn't fit into the categories of "description" or
-"installation." Arbitrary sections will be shown below the built-in sections outlined above.
+1. PHP class management is now done using Composer.  
+[GitHub](https://github.com/itmaroon/block-class-package)  
+[Packagist](https://packagist.org/packages/itmar/block-class-package)
+ 
+2. I decided to make functions and components common to other plugins into npm packages, and install and use them from npm.  
+[npm](https://www.npmjs.com/package/itmar-block-packages)  
+[GitHub](https://github.com/itmaroon/itmar-block-packages)
