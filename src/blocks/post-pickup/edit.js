@@ -767,27 +767,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			dispAttributeArray.splice(postsLength);
 		}
 
-		//postsが０のときは空のメッセージ表示ブロックを登録して終了
-		if (posts.length == 0) {
-			const emptyMessage = createBlock(
-				"itmar/design-title",
-				emptyMessageAttributes,
-			);
-			const emptyBlock = createBlock(
-				"itmar/design-group",
-				{ ...emptyGroupAttributes, className: "itmar_emptyGruop" },
-				[emptyMessage],
-			);
-			replaceInnerBlocks(clientId, [emptyBlock], false);
-			return;
-		} else if (
-			innerBlocks.length === 1 &&
-			innerBlocks[0].attributes.className?.includes("itmar_emptyGruop")
-		) {
-			//空を示すメッセージブロックは削除
-			removeBlock(innerBlocks[0].clientId);
-		}
-
 		//blocksAttributesArrayの数分のブロックを生成
 		const blocksArray = [];
 		let diffIdFlg = false;
@@ -795,9 +774,13 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		dispAttributeArray.forEach((dispAttribute, index) => {
 			//投稿データ（posts）がひな型（dispAttribute）の数に満たないときは最後の投稿データで埋める
 			//idはnullに書き換え
-			const post =
-				index < posts.length ? posts[index] : { ...posts[0], id: null };
 
+			const post =
+				posts.length == 0
+					? null
+					: index < posts.length
+					? posts[index]
+					: { ...posts[0], id: null };
 			//dispAttributeが{}ならitmar/design-groupブロックを挿入
 			if (Object.keys(dispAttribute).length === 0) {
 				Object.assign(dispAttribute, {
@@ -852,7 +835,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				const element_field = field.includes(".")
 					? field.substring(field.lastIndexOf(".") + 1)
 					: field;
-
 				if (post) {
 					//element_field値に応じた属性の初期値を生成
 
@@ -1032,6 +1014,23 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			//インナーブロックを配列にpush
 			blocksArray.push(blocksObj);
 		});
+		//表示対象記事がない場合のメッセージ表示ブロックを加える
+		if (parentBlock?.name != "itmar/slide-mv") {
+			const emptyMessage = createBlock(
+				"itmar/design-title",
+				emptyMessageAttributes,
+			);
+
+			const emptyClass =
+				posts.length != 0 ? "itmar_emptyGroup post_empty" : "itmar_emptyGroup";
+			const emptyBlock = createBlock(
+				"itmar/design-group",
+				{ ...emptyGroupAttributes, className: emptyClass },
+				[emptyMessage],
+			);
+
+			blocksArray.push(emptyBlock);
+		}
 
 		// すべてのPromiseが解決された後に処理
 		Promise.all(blocksArray)
@@ -1109,7 +1108,11 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			//ユニットごとにポストデータを記録
 			const unitAttribute = getBlockAttributes(unitBlock);
 			//blockNumがnullの時は処理しない
-			if (unitAttribute.attributes.blockNum == null) return;
+			if (
+				unitAttribute.attributes.blockNum == null ||
+				unitAttribute.attributes.blockNum == 1
+			)
+				return;
 
 			//ブロックに記入された内容を取得
 			const fieldObjs = FieldClassNameObj(unitAttribute, "field_");
@@ -1169,6 +1172,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					console.log("投稿が更新されました", response);
 				})
 				.catch((error) => {
+					console.log(unitAttribute.attributes);
 					console.error("投稿の更新に失敗しました", error);
 				});
 		});
@@ -1201,20 +1205,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	//ブロック属性の更新処理
 	useEffect(() => {
 		if (innerBlocks.length > 0 || parentBlock?.name === "itmar/slide-mv") {
-			//インナーブロックが対象ブロックなしの表示の時はemptyGroupAttributesの更新処理を行う
-			if (
-				innerBlocks.length === 1 &&
-				innerBlocks[0].attributes.className?.includes("itmar_emptyGruop")
-			) {
-				const titleBlock = innerBlocks[0].innerBlocks?.find(
-					(block) => (block.name = "itmar/design-title"),
-				);
-				setAttributes({
-					emptyMessageAttributes: titleBlock?.attributes,
-					emptyGroupAttributes: innerBlocks[0].attributes,
-				});
-				return;
-			}
 			//ユニットの属性更新処理
 			const blockAttrArray = [];
 			//itmar/slide-mvが親ブロックの場合は親ブロックのインナーブロックを対象にセット
@@ -1226,7 +1216,18 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					: innerBlocks;
 			targetBlocks.forEach((unitBlock) => {
 				const unitAttribute = getBlockAttributes(unitBlock);
-				//ユニットを配列に詰めてインナーブロックを更新
+				//表示対象なしメッセージブロックの属性更新処理
+				if (unitBlock.attributes.className?.includes("itmar_emptyGroup")) {
+					const titleBlock = unitBlock.innerBlocks?.find(
+						(block) => (block.name = "itmar/design-title"),
+					);
+					setAttributes({
+						emptyMessageAttributes: titleBlock?.attributes,
+						emptyGroupAttributes: unitBlock.attributes,
+					});
+					return;
+				}
+				//その他のユニットは配列に詰めてインナーブロックを更新
 				blockAttrArray.push(unitAttribute);
 			});
 			//インナーブロックが設定された表示数より少ないときはblocksAttributesArrayで埋める

@@ -603,6 +603,11 @@ const pickupChange = (pickup, fillFlg, currentPage = 0) => {
 			if (!divElements.length > 0) return; //post_unitクラスの要素がなければリターン
 
 			divElements.forEach((divs, index) => {
+				//表示なしメッセージのブロックは対象外
+				if (divs.querySelector(".itmar_emptyGroup") !== null) {
+					return;
+				}
+				//データなしか否かの判定
 				if (!posts[index]) {
 					divs.style.display = "none"; // 要素を非表示にする
 				} else {
@@ -618,6 +623,20 @@ const pickupChange = (pickup, fillFlg, currentPage = 0) => {
 					divs.style.display = "block"; // 要素を再表示する
 				}
 			});
+
+			//対象なしメッセージブロック
+			const emptyMess = divElements.find(
+				(div) => div.querySelector(".itmar_emptyGroup") !== null,
+			);
+			//postsが空でなければ非表示
+			if (emptyMess) {
+				if (posts.length > 0) {
+					emptyMess.style.display = "none";
+				} else {
+					emptyMess.style.display = "block";
+				}
+			}
+
 			// すべてのプロミスが完了したら非表示のクラスを外す
 			Promise.all(promises)
 				.then(() => {
