@@ -1,54 +1,53 @@
-# Copyright (C) 2024 Web Creator ITmaroon
+# Copyright (C) 2025 Web Creator ITmaroon
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Post Blocks 0.1.0\n"
-"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/post-blocks\n"
+"Project-Id-Version: Query Blocks 0.1.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/query-blocks\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2024-12-25T09:30:29+01:00\n"
+"POT-Creation-Date: 2025-01-05T05:28:54+01:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.11.0\n"
-"X-Domain: post-blocks\n"
+"X-Domain: query-blocks\n"
 
 #. Plugin Name of the plugin
-#: post-blocks.php
-msgid "Post Blocks"
+#: query-blocks.php
+msgid "Query Blocks"
 msgstr ""
 
 #. Plugin URI of the plugin
-#: post-blocks.php
+#: query-blocks.php
 msgid "https://itmaroon.net"
 msgstr ""
 
 #. Description of the plugin
-#: post-blocks.php
+#: query-blocks.php
 msgid "A collection of blocks that display WordPress posts"
 msgstr ""
 
 #. Author of the plugin
-#: post-blocks.php
+#: query-blocks.php
 msgid "Web Creator ITmaroon"
 msgstr ""
 
 #: assets/front-module.js:363
 #: assets/front-module.js:397
 #: build/front-module.js:316
+#: build/front-module.js:2231
+#: build/front-module.js:2265
 msgid "There is no image set."
-msgstr ""
-
-#: build/blocks/post-crumbs/index.js:1
-#: src/blocks/post-crumbs/index.js:14
-msgid "This block displays the selection status of post data in breadcrumb format."
 msgstr ""
 
 #: build/blocks/post-crumbs/index.js:1
 #: build/blocks/post-filter/index.js:1
 #: src/blocks/post-crumbs/edit.js:195
 #: src/blocks/post-filter/edit.js:706
+#: build/blocks/post-crumbs/index.js:250
+#: build/blocks/post-filter/index.js:765
 msgid "Linked Post Block"
 msgstr ""
 
@@ -58,6 +57,9 @@ msgstr ""
 #: src/blocks/post-crumbs/edit.js:200
 #: src/blocks/post-filter/edit.js:711
 #: src/blocks/post-pagenation/edit.js:482
+#: build/blocks/post-crumbs/index.js:255
+#: build/blocks/post-filter/index.js:770
+#: build/blocks/post-pagenation/index.js:557
 msgid "Select Pickup Posts Block"
 msgstr ""
 
@@ -67,46 +69,51 @@ msgstr ""
 #: src/blocks/post-crumbs/edit.js:203
 #: src/blocks/post-filter/edit.js:714
 #: src/blocks/post-pagenation/edit.js:485
+#: build/blocks/post-crumbs/index.js:258
+#: build/blocks/post-filter/index.js:773
+#: build/blocks/post-pagenation/index.js:560
 msgid "Select a block"
+msgstr ""
+
+#: build/blocks/post-crumbs/index.js:1
+#: src/blocks/post-crumbs/index.js:14
+#: build/blocks/post-crumbs/index.js:291
+msgid "This block displays the selection status of post data in breadcrumb format."
 msgstr ""
 
 #: build/blocks/post-filter/index.js:1
 #: src/blocks/post-filter/edit.js:48
+#: build/blocks/post-filter/index.js:107
 msgid "Search"
 msgstr ""
 
 #: build/blocks/post-filter/index.js:1
 #: src/blocks/post-filter/edit.js:49
+#: build/blocks/post-filter/index.js:108
 msgid "Date"
 msgstr ""
 
 #: build/blocks/post-filter/index.js:1
-#: src/blocks/post-filter/index.js:15
-msgid "This block provides users with the ability to set filters such as category and date for the Post Block."
-msgstr ""
-
-#: build/blocks/post-filter/index.js:1
-#: src/blocks/post-filter/index.js:63
-msgid "The string you want to search for..."
-msgstr ""
-
-#: build/blocks/post-filter/index.js:1
 #: src/blocks/post-filter/edit.js:726
+#: build/blocks/post-filter/index.js:785
 msgid "Filter Item Setting"
 msgstr ""
 
 #: build/blocks/post-filter/index.js:1
 #: src/blocks/post-filter/edit.js:737
+#: build/blocks/post-filter/index.js:796
 msgid "Date filter Setting"
 msgstr ""
 
 #: build/blocks/post-filter/index.js:1
 #: src/blocks/post-filter/edit.js:739
+#: build/blocks/post-filter/index.js:798
 msgid "Search filter Setting"
 msgstr ""
 
 #: build/blocks/post-filter/index.js:1
 #: src/blocks/post-filter/edit.js:754
+#: build/blocks/post-filter/index.js:813
 msgid "Custom fields to select"
 msgstr ""
 
@@ -116,6 +123,11 @@ msgstr ""
 #: src/blocks/post-filter/edit.js:852
 #: src/blocks/post-filter/edit.js:891
 #: src/blocks/post-filter/edit.js:909
+#: build/blocks/post-filter/index.js:861
+#: build/blocks/post-filter/index.js:878
+#: build/blocks/post-filter/index.js:911
+#: build/blocks/post-filter/index.js:950
+#: build/blocks/post-filter/index.js:968
 msgid "Year"
 msgstr ""
 
@@ -123,189 +135,242 @@ msgstr ""
 #: src/blocks/post-filter/edit.js:803
 #: src/blocks/post-filter/edit.js:834
 #: src/blocks/post-filter/edit.js:867
+#: build/blocks/post-filter/index.js:862
+#: build/blocks/post-filter/index.js:893
+#: build/blocks/post-filter/index.js:926
 msgid "Month"
 msgstr ""
 
 #: build/blocks/post-filter/index.js:1
 #: src/blocks/post-filter/edit.js:804
+#: build/blocks/post-filter/index.js:863
 msgid "Day"
 msgstr ""
 
 #: build/blocks/post-filter/index.js:1
 #: src/blocks/post-filter/edit.js:816
 #: src/blocks/post-filter/edit.js:888
+#: build/blocks/post-filter/index.js:875
+#: build/blocks/post-filter/index.js:947
 msgid "Start of period"
 msgstr ""
 
 #: build/blocks/post-filter/index.js:1
 #: src/blocks/post-filter/edit.js:849
 #: src/blocks/post-filter/edit.js:906
+#: build/blocks/post-filter/index.js:908
+#: build/blocks/post-filter/index.js:965
 msgid "End of period"
 msgstr ""
 
 #: build/blocks/post-filter/index.js:1
 #: src/blocks/post-filter/edit.js:931
+#: build/blocks/post-filter/index.js:990
 msgid "Taxonomy Setting"
 msgstr ""
 
-#: build/blocks/post-pagenation/index.js:1
-#: src/blocks/post-pagenation/index.js:14
-msgid "This block displays pagination. It works in conjunction with the Post Block to switch pages."
+#: build/blocks/post-filter/index.js:1
+#: src/blocks/post-filter/index.js:15
+#: build/blocks/post-filter/index.js:1032
+msgid "This block provides users with the ability to set filters such as category and date for the Post Block."
+msgstr ""
+
+#: build/blocks/post-filter/index.js:1
+#: src/blocks/post-filter/index.js:63
+#: build/blocks/post-filter/index.js:1080
+msgid "The string you want to search for..."
 msgstr ""
 
 #: build/blocks/post-pagenation/index.js:1
 #: src/blocks/post-pagenation/edit.js:428
+#: build/blocks/post-pagenation/index.js:503
 msgid "Back"
 msgstr ""
 
 #: build/blocks/post-pagenation/index.js:1
 #: src/blocks/post-pagenation/edit.js:439
+#: build/blocks/post-pagenation/index.js:514
 msgid "Forward"
 msgstr ""
 
 #: build/blocks/post-pagenation/index.js:1
 #: src/blocks/post-pagenation/edit.js:496
+#: build/blocks/post-pagenation/index.js:571
 msgid "Block Display Settings"
 msgstr ""
 
 #: build/blocks/post-pagenation/index.js:1
 #: src/blocks/post-pagenation/edit.js:502
+#: build/blocks/post-pagenation/index.js:577
 msgid "Display Type"
 msgstr ""
 
 #: build/blocks/post-pagenation/index.js:1
 #: src/blocks/post-pagenation/edit.js:505
+#: build/blocks/post-pagenation/index.js:580
 msgid "Page Num"
 msgstr ""
 
 #: build/blocks/post-pagenation/index.js:1
 #: src/blocks/post-pagenation/edit.js:507
+#: build/blocks/post-pagenation/index.js:582
 msgid "Back Foward"
 msgstr ""
 
 #: build/blocks/post-pagenation/index.js:1
 #: src/blocks/post-pagenation/edit.js:519
+#: build/blocks/post-pagenation/index.js:594
 msgid "Is Arrow Button"
 msgstr ""
 
 #: build/blocks/post-pagenation/index.js:1
 #: src/blocks/post-pagenation/edit.js:527
+#: build/blocks/post-pagenation/index.js:602
 msgid "Page Button Number"
+msgstr ""
+
+#: build/blocks/post-pagenation/index.js:1
+#: src/blocks/post-pagenation/index.js:14
+#: build/blocks/post-pagenation/index.js:632
+msgid "This block displays pagination. It works in conjunction with the Post Block to switch pages."
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:847
+#: build/blocks/post-pickup/index.js:908
+msgid "No title"
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:873
+#: build/blocks/post-pickup/index.js:934
+msgid "No excerpt"
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:1261
+#: build/blocks/post-pickup/index.js:1322
+msgid "Content Settings"
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:1263
+#: build/blocks/post-pickup/index.js:1324
+msgid "Pickup ID"
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:1269
+#: build/blocks/post-pickup/index.js:1330
+msgid "Select Post Type"
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:1282
+#: build/blocks/post-pickup/index.js:1343
+msgid "Select Query Type"
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:1285
+#: build/blocks/post-pickup/index.js:1346
+msgid "Nomal"
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:1286
+#: build/blocks/post-pickup/index.js:1347
+msgid "Popular"
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:1295
+#: build/blocks/post-pickup/index.js:1356
+msgid "Pickup Post Type"
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:1298
+#: build/blocks/post-pickup/index.js:1359
+msgid "Muluti Post"
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:1299
+#: build/blocks/post-pickup/index.js:1360
+msgid "Single Post"
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:1307
+#: build/blocks/post-pickup/index.js:1368
+msgid "Choice Taxsonomy"
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:1310
+#: build/blocks/post-pickup/index.js:1371
+msgid "The relationship between taxonomies"
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:1338
+#: build/blocks/post-pickup/index.js:1399
+msgid "Choice Field"
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:1358
+#: build/blocks/post-pickup/index.js:1419
+msgid "Display Num"
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:1368
+#: build/blocks/post-pickup/index.js:1429
+msgid "Unit Style Copy&Past"
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:1372
+#: build/blocks/post-pickup/index.js:1433
+msgid "Copy"
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:1382
+#: build/blocks/post-pickup/index.js:1443
+msgid "wait"
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:1386
+#: build/blocks/post-pickup/index.js:1447
+msgid "Paste"
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:1454
+#: build/blocks/post-pickup/index.js:1515
+msgid "Check the unit to which you want to paste and press the Paste button."
+msgstr ""
+
+#: build/blocks/post-pickup/index.js:1
+#: src/blocks/post-pickup/edit.js:1461
+#: build/blocks/post-pickup/index.js:1522
+msgid "Paste to"
 msgstr ""
 
 #: build/blocks/post-pickup/index.js:1
 #: src/blocks/post-pickup/index.js:20
+#: build/blocks/post-pickup/index.js:1583
 msgid "There were no relevant articles."
 msgstr ""
 
 #: build/blocks/post-pickup/index.js:1
 #: src/blocks/post-pickup/index.js:125
+#: build/blocks/post-pickup/index.js:1688
 msgid "This block picks up and displays articles that you want to draw attention to."
-msgstr ""
-
-#: build/blocks/post-pickup/index.js:1
-#: src/blocks/post-pickup/edit.js:865
-msgid "No title"
-msgstr ""
-
-#: build/blocks/post-pickup/index.js:1
-#: src/blocks/post-pickup/edit.js:891
-msgid "No excerpt"
-msgstr ""
-
-#: build/blocks/post-pickup/index.js:1
-#: src/blocks/post-pickup/edit.js:1260
-msgid "Content Settings"
-msgstr ""
-
-#: build/blocks/post-pickup/index.js:1
-#: src/blocks/post-pickup/edit.js:1262
-msgid "Pickup ID"
-msgstr ""
-
-#: build/blocks/post-pickup/index.js:1
-#: src/blocks/post-pickup/edit.js:1268
-msgid "Select Post Type"
-msgstr ""
-
-#: build/blocks/post-pickup/index.js:1
-#: src/blocks/post-pickup/edit.js:1281
-msgid "Select Query Type"
-msgstr ""
-
-#: build/blocks/post-pickup/index.js:1
-#: src/blocks/post-pickup/edit.js:1284
-msgid "Nomal"
-msgstr ""
-
-#: build/blocks/post-pickup/index.js:1
-#: src/blocks/post-pickup/edit.js:1285
-msgid "Popular"
-msgstr ""
-
-#: build/blocks/post-pickup/index.js:1
-#: src/blocks/post-pickup/edit.js:1294
-msgid "Pickup Post Type"
-msgstr ""
-
-#: build/blocks/post-pickup/index.js:1
-#: src/blocks/post-pickup/edit.js:1297
-msgid "Muluti Post"
-msgstr ""
-
-#: build/blocks/post-pickup/index.js:1
-#: src/blocks/post-pickup/edit.js:1298
-msgid "Single Post"
-msgstr ""
-
-#: build/blocks/post-pickup/index.js:1
-#: src/blocks/post-pickup/edit.js:1306
-msgid "Choice Taxsonomy"
-msgstr ""
-
-#: build/blocks/post-pickup/index.js:1
-#: src/blocks/post-pickup/edit.js:1309
-msgid "The relationship between taxonomies"
-msgstr ""
-
-#: build/blocks/post-pickup/index.js:1
-#: src/blocks/post-pickup/edit.js:1334
-msgid "Choice Field"
-msgstr ""
-
-#: build/blocks/post-pickup/index.js:1
-#: src/blocks/post-pickup/edit.js:1354
-msgid "Display Num"
-msgstr ""
-
-#: build/blocks/post-pickup/index.js:1
-#: src/blocks/post-pickup/edit.js:1364
-msgid "Unit Style Copy&Past"
-msgstr ""
-
-#: build/blocks/post-pickup/index.js:1
-#: src/blocks/post-pickup/edit.js:1368
-msgid "Copy"
-msgstr ""
-
-#: build/blocks/post-pickup/index.js:1
-#: src/blocks/post-pickup/edit.js:1378
-msgid "wait"
-msgstr ""
-
-#: build/blocks/post-pickup/index.js:1
-#: src/blocks/post-pickup/edit.js:1382
-msgid "Paste"
-msgstr ""
-
-#: build/blocks/post-pickup/index.js:1
-#: src/blocks/post-pickup/edit.js:1450
-msgid "Check the unit to which you want to paste and press the Paste button."
-msgstr ""
-
-#: build/blocks/post-pickup/index.js:1
-#: src/blocks/post-pickup/edit.js:1457
-msgid "Paste to"
 msgstr ""
 
 #: build/blocks/post-crumbs/block.json

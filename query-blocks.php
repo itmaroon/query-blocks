@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Plugin Name:       Post Blocks
+ * Plugin Name:       Query Blocks
  * Plugin URI:        https://itmaroon.net
  * Description:       A collection of blocks that display WordPress posts
  * Requires at least: 6.3
@@ -10,7 +10,7 @@
  * Author:            Web Creator ITmaroon
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain:       post-blocks
+ * Text Domain:       query-blocks
  * Domain Path:       /languages
  *
  * @package           itmar
@@ -60,7 +60,7 @@ add_action('admin_notices', function () use ($block_entry) {
 //アクセスカウンターのセット
 add_action('template_redirect', array($block_access, 'set_post_count'));
 
-function itmar_post_blocks_front()
+function itmar_query_blocks_front()
 {
 	//管理画面以外（フロントエンド側でのみ読み込む）
 	if (!is_admin()) {
@@ -84,7 +84,7 @@ function itmar_post_blocks_front()
 	}
 }
 
-add_action('enqueue_block_assets', 'itmar_post_blocks_front');
+add_action('enqueue_block_assets', 'itmar_query_blocks_front');
 
 //シングルページのデータ取得のためのカスタムエンドポイント
 add_action('rest_api_init', function () {

@@ -192,15 +192,15 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		<>
 			<InspectorControls group="settings">
 				<PanelBody
-					title={__("Linked Post Block", "post-blocks")}
+					title={__("Linked Post Block", "query-blocks")}
 					initialOpen={true}
 					className="form_setteing_ctrl"
 				>
 					<SelectControl
-						label={__("Select Pickup Posts Block", "post-blocks")}
+						label={__("Select Pickup Posts Block", "query-blocks")}
 						value={selectedBlockId}
 						options={[
-							{ label: __("Select a block", "post-blocks"), value: "" },
+							{ label: __("Select a block", "query-blocks"), value: "" },
 							...pickupPosts.map((block) => ({
 								label: block.attributes.pickupId,
 								value: block.attributes.pickupId,

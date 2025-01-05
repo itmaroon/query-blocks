@@ -556,7 +556,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 
 		try {
 			const response = await fetch(
-				`${post_blocks.home_url}/wp-json/itmar-rest-api/v1/search?${queryString}`,
+				`${query_blocks.home_url}/wp-json/itmar-rest-api/v1/search?${queryString}`,
 			);
 			const data = await response.json();
 
@@ -584,7 +584,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 
 		try {
 			const response = await fetch(
-				`${post_blocks.home_url}/wp-json/itmar-rest-api/v1/search?${queryString}`,
+				`${query_blocks.home_url}/wp-json/itmar-rest-api/v1/search?${queryString}`,
 			);
 			const data = await response.json();
 
@@ -844,7 +844,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 									className: "field_title",
 									headingContent: post.title.rendered
 										? post.title.rendered
-										: __("No title", "post-blocks"),
+										: __("No title", "query-blocks"),
 							  }
 							: element_field === "date"
 							? {
@@ -855,7 +855,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 							element_field === "featured_media" && post.featured_media == 0
 							? {
 									className: "itmar_ex_block field_featured_media",
-									url: `${post_blocks.plugin_url}/assets/no-image.png`,
+									url: `${query_blocks.plugin_url}/assets/no-image.png`,
 									id: null,
 							  }
 							: //メディアライブラリのIDが設定されている場合
@@ -870,7 +870,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 									className: "itmar_ex_block field_excerpt",
 									content: post.excerpt.rendered
 										? post.excerpt.rendered.replace(/<\/?p>/g, "") //pタグを除去する
-										: __("No excerpt", "post-blocks"),
+										: __("No excerpt", "query-blocks"),
 							  }
 							: element_field === "link"
 							? {
@@ -912,7 +912,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 									? { id: costumFieldValue, url: null }
 									: {
 											id: null,
-											url: `${post_blocks.plugin_url}/assets/no-image.png`,
+											url: `${query_blocks.plugin_url}/assets/no-image.png`,
 									  };
 
 								blockAttributes = {
@@ -1258,16 +1258,16 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	return (
 		<>
 			<InspectorControls group="settings">
-				<PanelBody title={__("Content Settings", "post-blocks")}>
+				<PanelBody title={__("Content Settings", "query-blocks")}>
 					<TextControl
-						label={__("Pickup ID", "post-blocks")}
+						label={__("Pickup ID", "query-blocks")}
 						value={pickupId}
 						onChange={(value) => setAttributes({ pickupId: value })}
 					/>
 					<ArchiveSelectControl
 						selectedSlug={selectedSlug}
-						label={__("Select Post Type", "post-blocks")}
-						homeUrl={post_blocks.home_url}
+						label={__("Select Post Type", "query-blocks")}
+						homeUrl={query_blocks.home_url}
 						onChange={(postInfo) => {
 							if (postInfo) {
 								setAttributes({
@@ -1279,11 +1279,11 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					/>
 
 					<SelectControl
-						label={__("Select Query Type", "post-blocks")}
+						label={__("Select Query Type", "query-blocks")}
 						value={pickupQuery}
 						options={[
-							{ label: __("Nomal", "post-blocks"), value: "nomal" },
-							{ label: __("Popular", "post-blocks"), value: "popular" },
+							{ label: __("Nomal", "query-blocks"), value: "nomal" },
+							{ label: __("Popular", "query-blocks"), value: "popular" },
 						]}
 						onChange={(changeOption) => {
 							setAttributes({ pickupQuery: changeOption });
@@ -1292,11 +1292,11 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 
 					<div className="itmar_select_row">
 						<RadioControl
-							label={__("Pickup Post Type", "post-blocks")}
+							label={__("Pickup Post Type", "query-blocks")}
 							selected={pickupType}
 							options={[
-								{ label: __("Muluti Post", "post-blocks"), value: "multi" },
-								{ label: __("Single Post", "post-blocks"), value: "single" },
+								{ label: __("Muluti Post", "query-blocks"), value: "multi" },
+								{ label: __("Single Post", "query-blocks"), value: "single" },
 							]}
 							onChange={(changeOption) =>
 								setAttributes({ pickupType: changeOption })
@@ -1304,10 +1304,13 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 						/>
 					</div>
 
-					<PanelBody title={__("Choice Taxsonomy", "post-blocks")}>
+					<PanelBody title={__("Choice Taxsonomy", "query-blocks")}>
 						<div className="itmar_select_row">
 							<RadioControl
-								label={__("The relationship between taxonomies", "post-blocks")}
+								label={__(
+									"The relationship between taxonomies",
+									"query-blocks",
+								)}
 								selected={taxRelateType}
 								options={[
 									{ label: "AND", value: "AND" },
@@ -1332,13 +1335,13 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 						/>
 					</PanelBody>
 
-					<PanelBody title={__("Choice Field", "post-blocks")}>
+					<PanelBody title={__("Choice Field", "query-blocks")}>
 						<FieldChoiceControl
 							type="field"
 							selectedSlug={selectedRest}
 							choiceItems={choiceFields}
 							blockMap={blockMap}
-							textDomain="post-blocks"
+							textDomain="query-blocks"
 							onChange={(newChoiceFields) => {
 								//選択されたフィールド名の配列を登録
 								setAttributes({ choiceFields: newChoiceFields });
@@ -1352,7 +1355,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 						<PanelRow className="itmar_post_blocks_pannel">
 							<RangeControl
 								value={numberOfItems}
-								label={__("Display Num", "post-blocks")}
+								label={__("Display Num", "query-blocks")}
 								max={30}
 								min={1}
 								onChange={(val) => setAttributes({ numberOfItems: val })}
@@ -1362,11 +1365,11 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				</PanelBody>
 			</InspectorControls>
 			<InspectorControls group="styles">
-				<PanelBody title={__("Unit Style Copy&Past", "post-blocks")}>
+				<PanelBody title={__("Unit Style Copy&Past", "query-blocks")}>
 					<div className="itmar_post_block_notice">
 						{blocksAttributesArray.map((styleObj, index) => {
 							const copyBtn = {
-								label: __("Copy", "post-blocks"),
+								label: __("Copy", "query-blocks"),
 								onClick: () => {
 									//CopyがクリックされたNoticeの順番を記録
 									setNoticeClickedIndex(index);
@@ -1375,12 +1378,12 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 							const pastBtn = {
 								label: isPastWait ? (
 									<img
-										src={`${post_blocks.plugin_url}/assets/past-wait.gif`}
-										alt={__("wait", "post-blocks")}
+										src={`${query_blocks.plugin_url}/assets/past-wait.gif`}
+										alt={__("wait", "query-blocks")}
 										style={{ width: "36px", height: "36px" }} // サイズ調整
 									/>
 								) : (
-									__("Paste", "post-blocks")
+									__("Paste", "query-blocks")
 								),
 								onClick: () => {
 									//貼付け中フラグをオン
@@ -1450,12 +1453,12 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 								noticeClickedIndex === index ? [pastBtn] : [copyBtn];
 							const checkInfo = __(
 								"Check the unit to which you want to paste and press the Paste button.",
-								"post-blocks",
+								"query-blocks",
 							);
 							const checkContent =
 								noticeClickedIndex != index ? (
 									<CheckboxControl
-										label={__("Paste to", "post-blocks")}
+										label={__("Paste to", "query-blocks")}
 										checked={isCopyChecked[index]}
 										onChange={(newVal) => {
 											handleCheckboxChange(index, newVal);

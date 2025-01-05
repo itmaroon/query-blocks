@@ -17,7 +17,7 @@ registerBlockType(metadata.name, {
 		emptyMessageAttributes: {
 			type: "object",
 			default: {
-				headingContent: __("There were no relevant articles.", "post-blocks"),
+				headingContent: __("There were no relevant articles.", "query-blocks"),
 			},
 		},
 		emptyGroupAttributes: {
@@ -124,7 +124,7 @@ registerBlockType(metadata.name, {
 	},
 	description: __(
 		"This block picks up and displays articles that you want to draw attention to.",
-		"post-blocks",
+		"query-blocks",
 	),
 
 	edit: Edit,

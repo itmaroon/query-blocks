@@ -14,7 +14,7 @@ import { getTodayYear, getTodayMonth } from "itmar-block-packages";
 registerBlockType(metadata.name, {
 	description: __(
 		"This block provides users with the ability to set filters such as category and date for the Post Block.",
-		"post-blocks",
+		"query-blocks",
 	),
 	attributes: {
 		...metadata.attributes,
@@ -60,7 +60,7 @@ registerBlockType(metadata.name, {
 					},
 					labelPos: "center center",
 				},
-				placeFolder: __("The string you want to search for...", "post-blocks"),
+				placeFolder: __("The string you want to search for...", "query-blocks"),
 			},
 		},
 	},

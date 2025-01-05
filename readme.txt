@@ -1,6 +1,6 @@
-=== Post Blocks ===
+=== Query Blocks ===
 Contributors:      Web Creator ITmaroon
-Tags:              block, post, taxsonomy, field
+Tags:              block, post, taxsonomy, field, query
 Requires at least: 6.3
 Tested up to:      6.7.1
 Stable tag:        0.1.0
@@ -12,7 +12,7 @@ This is a collection of blocks that display WordPress posts. It includes blocks 
 
 == Related Links ==
 
-* [post-blocks:Github](https://github.com/itmaroon/post-blocks)
+* [query-blocks:Github](https://github.com/itmaroon/query-blocks)
 * [block-class-package:GitHub](https://github.com/itmaroon/block-class-package)  
 * [block-class-package:Packagist](https://packagist.org/packages/itmar/block-class-package) 
 * [itmar-block-packages:npm](https://www.npmjs.com/package/itmar-block-packages)  

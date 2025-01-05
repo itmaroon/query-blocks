@@ -1,5 +1,5 @@
 {
-    "name": "itmaroon/post-blocks",
+    "name": "itmaroon/query-blocks",
     "autoload": {
         "psr-4": {
             "Itmaroon\\PostBlocks\\": "src/"

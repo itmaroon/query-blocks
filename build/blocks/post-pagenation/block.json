@@ -58,7 +58,7 @@
       "default": {}
     }
   },
-  "textdomain": "post-blocks",
+  "textdomain": "query-blocks",
   "editorScript": "file:./index.js",
   "editorStyle": "file:./index.css",
   "style": "file:./style-index.css"

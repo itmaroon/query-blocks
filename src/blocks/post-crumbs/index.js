@@ -13,7 +13,7 @@ import { ReactComponent as Crumbs } from "./crumbs.svg";
 registerBlockType(metadata.name, {
 	description: __(
 		"This block displays the selection status of post data in breadcrumb format.",
-		"post-blocks",
+		"query-blocks",
 	),
 
 	icon: <Crumbs />,

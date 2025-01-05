@@ -425,7 +425,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					};
 					const setPrevAttributes = {
 						className: "itmar_design_prev_title",
-						headingContent: __("Back", "post-blocks"),
+						headingContent: __("Back", "query-blocks"),
 						linkKind: "free",
 						...commonDefStyle,
 						...forwardTitleAttributes, //ユーザー設定が最優先
@@ -436,7 +436,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					);
 					const setBackAttributes = {
 						className: "itmar_design_back_title",
-						headingContent: __("Forward", "post-blocks"),
+						headingContent: __("Forward", "query-blocks"),
 						linkKind: "free",
 						...commonDefStyle,
 						...backTitleAttributes, //ユーザー設定が最優先
@@ -479,10 +479,10 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		<>
 			<InspectorControls group="settings">
 				<SelectControl
-					label={__("Select Pickup Posts Block", "post-blocks")}
+					label={__("Select Pickup Posts Block", "query-blocks")}
 					value={selectedBlockId}
 					options={[
-						{ label: __("Select a block", "post-blocks"), value: "" },
+						{ label: __("Select a block", "query-blocks"), value: "" },
 						...pickupPosts.map((block) => ({
 							label: block.attributes.pickupId,
 							value: block.attributes.pickupId,
@@ -493,18 +493,18 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					}}
 				/>
 				<PanelBody
-					title={__("Block Display Settings", "post-blocks")}
+					title={__("Block Display Settings", "query-blocks")}
 					initialOpen={true}
 					className="form_setteing_ctrl"
 				>
 					<div className="itmar_select_row">
 						<RadioControl
-							label={__("Display Type", "post-blocks")}
+							label={__("Display Type", "query-blocks")}
 							selected={pageType}
 							options={[
-								{ label: __("Page Num", "post-blocks"), value: "pagenation" },
+								{ label: __("Page Num", "query-blocks"), value: "pagenation" },
 								{
-									label: __("Back Foward", "post-blocks"),
+									label: __("Back Foward", "query-blocks"),
 									value: "backFoward",
 								},
 							]}
@@ -516,7 +516,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					{pageType === "pagenation" && (
 						<>
 							<ToggleControl
-								label={__("Is Arrow Button", "post-blocks")}
+								label={__("Is Arrow Button", "query-blocks")}
 								checked={isArrowButton}
 								onChange={(newVal) => {
 									setAttributes({ isArrowButton: newVal });
@@ -524,7 +524,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 							/>
 							<RangeControl
 								value={dispOfItems}
-								label={__("Page Button Number", "post-blocks")}
+								label={__("Page Button Number", "query-blocks")}
 								max={30}
 								min={3}
 								onChange={(val) => setAttributes({ dispOfItems: val })}

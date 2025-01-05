@@ -45,8 +45,8 @@ const units = [
 ];
 
 const builtin_items = [
-	{ value: "search", label: __("Search", "post-blocks") },
-	{ value: "date", label: __("Date", "post-blocks") },
+	{ value: "search", label: __("Search", "query-blocks") },
+	{ value: "date", label: __("Date", "query-blocks") },
 ];
 
 //ネストしたブロックを平坦化
@@ -703,15 +703,15 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		<>
 			<InspectorControls group="settings">
 				<PanelBody
-					title={__("Linked Post Block", "post-blocks")}
+					title={__("Linked Post Block", "query-blocks")}
 					initialOpen={true}
 					className="form_setteing_ctrl"
 				>
 					<SelectControl
-						label={__("Select Pickup Posts Block", "post-blocks")}
+						label={__("Select Pickup Posts Block", "query-blocks")}
 						value={selectedBlockId}
 						options={[
-							{ label: __("Select a block", "post-blocks"), value: "" },
+							{ label: __("Select a block", "query-blocks"), value: "" },
 							...pickupPosts.map((block) => ({
 								label: block.attributes.pickupId,
 								value: block.attributes.pickupId,
@@ -723,7 +723,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					/>
 				</PanelBody>
 				<PanelBody
-					title={__("Filter Item Setting", "post-blocks")}
+					title={__("Filter Item Setting", "query-blocks")}
 					initialOpen={true}
 					className="form_setteing_ctrl"
 				>
@@ -734,9 +734,9 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 						//フィルタ用パネルのラベル
 						const panel_label =
 							filter.value === "date"
-								? __("Date filter Setting", "post-blocks")
+								? __("Date filter Setting", "query-blocks")
 								: filter.value === "search"
-								? __("Search filter Setting", "post-blocks")
+								? __("Search filter Setting", "query-blocks")
 								: "";
 						return (
 							<PanelBody
@@ -751,7 +751,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 									pickupCustomFields &&
 									targetCustomFields.length > 0 && (
 										<PanelBody
-											title={__("Custom fields to select", "post-blocks")}
+											title={__("Custom fields to select", "query-blocks")}
 											initialOpen={true}
 											className="form_setteing_ctrl"
 										>
@@ -799,9 +799,9 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 										<RadioControl
 											selected={dateOption}
 											options={[
-												{ label: __("Year", "post-blocks"), value: "year" },
-												{ label: __("Month", "post-blocks"), value: "month" },
-												{ label: __("Day", "post-blocks"), value: "day" },
+												{ label: __("Year", "query-blocks"), value: "year" },
+												{ label: __("Month", "query-blocks"), value: "month" },
+												{ label: __("Day", "query-blocks"), value: "day" },
 											]}
 											onChange={(option) =>
 												setAttributes({ dateOption: option })
@@ -813,10 +813,10 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 									isChecked &&
 									dateOption === "month" && (
 										<>
-											<label>{__("Start of period", "post-blocks")}</label>
+											<label>{__("Start of period", "query-blocks")}</label>
 											<PanelRow className="itmar_date_span">
 												<NumberControl
-													label={__("Year", "post-blocks")}
+													label={__("Year", "query-blocks")}
 													labelPosition="side"
 													max={today.getFullYear()}
 													min={2000}
@@ -831,7 +831,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 													value={dateSpan.startYear}
 												/>
 												<NumberControl
-													label={__("Month", "post-blocks")}
+													label={__("Month", "query-blocks")}
 													labelPosition="side"
 													max={12}
 													min={1}
@@ -846,10 +846,10 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 													value={dateSpan.startMonth}
 												/>
 											</PanelRow>
-											<label>{__("End of period", "post-blocks")}</label>
+											<label>{__("End of period", "query-blocks")}</label>
 											<PanelRow className="itmar_date_span">
 												<NumberControl
-													label={__("Year", "post-blocks")}
+													label={__("Year", "query-blocks")}
 													labelPosition="side"
 													max={today.getFullYear()}
 													min={2000}
@@ -864,7 +864,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 													value={dateSpan.endYear}
 												/>
 												<NumberControl
-													label={__("Month", "post-blocks")}
+													label={__("Month", "query-blocks")}
 													labelPosition="side"
 													max={12}
 													min={1}
@@ -885,10 +885,10 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 									isChecked &&
 									dateOption === "year" && (
 										<>
-											<label>{__("Start of period", "post-blocks")}</label>
+											<label>{__("Start of period", "query-blocks")}</label>
 											<PanelRow className="itmar_date_span">
 												<NumberControl
-													label={__("Year", "post-blocks")}
+													label={__("Year", "query-blocks")}
 													labelPosition="side"
 													max={today.getFullYear()}
 													min={2000}
@@ -903,10 +903,10 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 													value={dateSpan.startYear}
 												/>
 											</PanelRow>
-											<label>{__("End of period", "post-blocks")}</label>
+											<label>{__("End of period", "query-blocks")}</label>
 											<PanelRow className="itmar_date_span">
 												<NumberControl
-													label={__("Year", "post-blocks")}
+													label={__("Year", "query-blocks")}
 													labelPosition="side"
 													max={today.getFullYear()}
 													min={2000}
@@ -928,7 +928,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					})}
 
 					<PanelBody
-						title={__("Taxonomy Setting", "post-blocks")}
+						title={__("Taxonomy Setting", "query-blocks")}
 						initialOpen={true}
 						className="form_setteing_ctrl"
 					>

@@ -13,7 +13,7 @@ import { ReactComponent as Pagenation } from "./pagenation.svg";
 registerBlockType(metadata.name, {
 	description: __(
 		"This block displays pagination. It works in conjunction with the Post Block to switch pages.",
-		"post-blocks",
+		"query-blocks",
 	),
 
 	icon: <Pagenation />,

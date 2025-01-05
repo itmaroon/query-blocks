@@ -72,7 +72,7 @@ const getSearchRecordsFromAPI = async (query) => {
 
 	try {
 		const response = await fetch(
-			`${post_blocks.home_url}/wp-json/itmar-rest-api/v1/search?${queryString}`,
+			`${query_blocks.home_url}/wp-json/itmar-rest-api/v1/search?${queryString}`,
 		);
 		const data = await response.json();
 
@@ -359,8 +359,8 @@ const ModifyFieldElement = (element, post, blockMap, dispTermsDom) => {
 							iElement.classList.add("wp-image-000");
 							iElement.removeAttribute("srcset");
 							iElement.style.objectFit = "contain";
-							iElement.src = `${post_blocks.plugin_url}/assets/no-image.png`;
-							iElement.alt = __("There is no image set.", "post-blocks");
+							iElement.src = `${query_blocks.plugin_url}/assets/no-image.png`;
+							iElement.alt = __("There is no image set.", "query-blocks");
 							break;
 						}
 
@@ -393,8 +393,8 @@ const ModifyFieldElement = (element, post, blockMap, dispTermsDom) => {
 										iElement.classList.add("wp-image-000");
 										iElement.removeAttribute("srcset");
 										iElement.style.objectFit = "contain";
-										iElement.src = `${post_blocks.plugin_url}/assets/no-image.png`;
-										iElement.alt = __("There is no image set.", "post-blocks");
+										iElement.src = `${query_blocks.plugin_url}/assets/no-image.png`;
+										iElement.alt = __("There is no image set.", "query-blocks");
 									}
 								}),
 						);

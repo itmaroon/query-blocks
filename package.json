@@ -1,5 +1,5 @@
 {
-	"name": "post-blocks",
+	"name": "query-blocks",
 	"version": "0.1.0",
 	"description": "WordPressの投稿を表示するブロック集です",
 	"author": "WebクリエイターITmaroon",
