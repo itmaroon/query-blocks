@@ -186,7 +186,8 @@ function itmar_search_endpoint($request)
 				$meta_query[] = array(
 					'key' => $field,
 					'value' =>  $search_term,
-					'compare' => 'LIKE'
+					'compare' => 'LIKE',
+					'type'    => 'CHAR'
 				);
 			}
 
@@ -259,7 +260,6 @@ function itmar_search_endpoint($request)
 
 	// クエリの実行
 	$query = new WP_Query($args);
-	error_log(print_r($query, true));
 
 	$posts = array();
 	if ($query->have_posts()) {

@@ -20,9 +20,7 @@ This is a collection of blocks that display WordPress posts. It includes blocks 
 
 == Description ==
 
-When you install this plugin, the following four blocks are registered and can be used not only in the block editor but also in the site editor (tested with WordPress 6.7).
-
-Below is a brief description of each block.
+When you install this plugin, the following four blocks are registered and can be used not only in the block editor but also in the site editor.
 
 1. Post Pickup
 Provides a function to pick up WordPress post data. Internally, it generates a subquery to extract data from the database. The extracted data is selected by selecting the post type and term, and the required fields are rendered by selecting the field. Custom fields can also be selected.
