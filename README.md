@@ -32,8 +32,10 @@ IDで指定されたPost Pickupのフィルタリング情報をパンくずリ�
 3. 文言等の表示に関しては、WordPressの国際化関数による設定を行っていますので、多国籍の言語表示が可能です。現時点においては英語と日本語表記が可能となっています。
 
 ## 留意事項
-1. Design Text ControlブロックではFontAwesomeのKitでダウンロードしたアセットからアイコンを表示しています。したがって、したがって、このブロックを利用する場合は、次の利用規約にしたがってください。
-	[FontAwesome Privacy Poicy](https://fontawesome.com/privacy)
-2. Code HighLightブロックでは、ハイライト機能を実現するため、「Google Code Prettify」プラグインを利用しています。したがって、このブロックを利用する場合は、次のドキュメント等をお読みください。
-	[Google Code Prettify](https://github.com/googlearchive/code-prettify)
+1. PHP クラスの管理は Composer で行っています。
+[GitHub](https://github.com/itmaroon/block-class-package)
+[Packagist](https://packagist.org/packages/itmar/block-class-package)
 
+2. 他のプラグインと共通する機能やコンポーネントを npm パッケージ化し、npm からインストールして使用することにしました。
+[npm](https://www.npmjs.com/package/itmar-block-packages)
+[GitHub](https://github.com/itmaroon/itmar-block-packages)
