@@ -1,5 +1,5 @@
 === Query Blocks ===
-Contributors:      Web Creator ITmaroon
+Contributors:      itmaroon
 Tags:              block, post, taxsonomy, field, query
 Requires at least: 6.3
 Tested up to:      6.7.1
@@ -88,3 +88,12 @@ OR…
 2. I decided to make functions and components common to other plugins into npm packages, and install and use them from npm.  
 [npm](https://www.npmjs.com/package/itmar-block-packages)  
 [GitHub](https://github.com/itmaroon/itmar-block-packages)
+
+== External services ==
+
+This plugin connects to the API to get holiday information. This is necessary to display the names of holidays in the displayed calendar.
+This service is provided by "Google LLC". The terms of use and privacy policy are available at the following links:
+[Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy?hl=ja)
+[Google Calendar Partner Program Terms of Use](https://www.google.co.jp/googlecalendar/partner_program_policies.html)
+[Google Privacy Policy](https://policies.google.com/privacy?hl=ja)
+[Google Calendar Privacy Basics](https://support.google.com/calendar/answer/10366125?hl=ja)
