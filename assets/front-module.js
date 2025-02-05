@@ -578,8 +578,6 @@ const pickupChange = (pickup, fillFlg, currentPage = 0) => {
 	//カスタムエンドポイントから投稿データを取得
 	getSearchRecordsFromAPI(query)
 		.then((data) => {
-			console.log(data);
-
 			let targetIndex = -1; //singleページのときターゲットとなる配列要素のインデクス
 			if (pickupType === "multi") {
 				posts = data.posts;

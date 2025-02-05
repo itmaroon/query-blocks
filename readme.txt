@@ -3,7 +3,7 @@ Contributors:      itmaroon
 Tags:              block, post, taxsonomy, field, query
 Requires at least: 6.3
 Tested up to:      6.7.1
-Stable tag:        0.1.0
+Stable tag:        1.0.2
 License:           GPL-2.0-or-later
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
 Requires PHP: 8.2.10
@@ -76,8 +76,13 @@ OR…
 8. Post Pagination forward/backward navigation
 
 == Changelog ==
+= 1.0.2 =
+- Fixed the issue where the icon inverted display was not displayed properly when selecting a block.
 
-= 0.1.0 =
+= 1.0.1 =
+Fixed a bug in Post Pickup where the selection button was not displayed when the featured image was not set for the first post.
+
+= 1.0.0 =
 * Release
 
 == Arbitrary section ==
@@ -89,8 +94,7 @@ OR…
 [npm](https://www.npmjs.com/package/itmar-block-packages)  
 [GitHub](https://github.com/itmaroon/itmar-block-packages)
 
-== External services ==
-
+== External services ==  
 This plugin connects to the API to get holiday information. This is necessary to display the names of holidays in the displayed calendar.
 This service is provided by "Google LLC". The terms of use and privacy policy are available at the following links:
 [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy?hl=ja)

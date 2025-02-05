@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "af7053f2eb3f1461f307ffdf5aec803e",
+    "content-hash": "2908398d8a3ea5b8850fe024de520d35",
     "packages": [
         {
             "name": "itmar/block-class-package",
