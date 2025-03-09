@@ -46,8 +46,8 @@ In addition, when Post Pickup is displayed as a single post, the title of the po
 == Installation ==
 
 1. From the WP admin panel, click “Plugins” -> “Add new”.
-2. In the browser input box, type “Post Blocks”.
-3. Select the “Post Blocks” plugin and click “Install”.
+2. In the browser input box, type “Query Blocks”.
+3. Select the “Query Blocks” plugin and click “Install”.
 4. Activate the plugin.
 
 OR…
