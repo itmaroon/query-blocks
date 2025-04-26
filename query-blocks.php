@@ -27,17 +27,14 @@
 //PHPファイルに対する直接アクセスを禁止
 if (!defined('ABSPATH')) exit;
 
-//composerによるリモートリポジトリからの読み込みを要求
-require_once __DIR__ . '/vendor/autoload.php';
-
 // プラグイン情報取得に必要なファイルを読み込む
 if (!function_exists('get_plugin_data')) {
 	require_once(ABSPATH . 'wp-admin/includes/plugin.php');
 }
 
-
-$block_entry = new \Itmar\BlockClassPakage\ItmarEntryClass();
-$block_access = new \Itmar\BlockClassPakage\ItmarAccessClass();
+require_once __DIR__ . '\vendor\itmar\loader-package\src\register_autoloader.php';
+$block_entry = new \Itmar\BlockClassPackage\ItmarEntryClass();
+$block_access = new \Itmar\BlockClassPackage\ItmarAccessClass();
 
 //ブロックの登録
 add_action('init', function () use ($block_entry) {
