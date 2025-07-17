@@ -32,7 +32,7 @@ if (!function_exists('get_plugin_data')) {
 	require_once(ABSPATH . 'wp-admin/includes/plugin.php');
 }
 
-require_once __DIR__ . '\vendor\itmar\loader-package\src\register_autoloader.php';
+require_once __DIR__ . '/vendor/itmar/loader-package/src/register_autoloader.php';
 $block_entry = new \Itmar\BlockClassPackage\ItmarEntryClass();
 $block_access = new \Itmar\BlockClassPackage\ItmarAccessClass();
 

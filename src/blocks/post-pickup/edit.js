@@ -1290,7 +1290,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 						}}
 					/>
 
-					<div className="itmar_select_row">
+					<div className="itmar_title_type">
 						<RadioControl
 							label={__("Pickup Post Type", "query-blocks")}
 							selected={pickupType}
@@ -1305,7 +1305,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					</div>
 
 					<PanelBody title={__("Choice Taxsonomy", "query-blocks")}>
-						<div className="itmar_select_row">
+						<div className="itmar_title_type">
 							<RadioControl
 								label={__(
 									"The relationship between taxonomies",
