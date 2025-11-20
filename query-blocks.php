@@ -65,7 +65,7 @@ function itmar_query_blocks_front()
 		wp_enqueue_script(
 			'post_front_handle',
 			plugins_url('build/front-module.js?', __FILE__),
-			array(),
+			array('jquery'),
 			filemtime($script_path),
 			true
 		);

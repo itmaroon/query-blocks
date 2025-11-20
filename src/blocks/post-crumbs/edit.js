@@ -18,28 +18,6 @@ import {
 	termToDispObj,
 } from "itmar-block-packages";
 
-//スペースのリセットバリュー
-const padding_resetValues = {
-	top: "10px",
-	left: "10px",
-	right: "10px",
-	bottom: "10px",
-};
-
-//ボーダーのリセットバリュー
-const border_resetValues = {
-	top: "0px",
-	left: "0px",
-	right: "0px",
-	bottom: "0px",
-};
-
-const units = [
-	{ value: "px", label: "px" },
-	{ value: "em", label: "em" },
-	{ value: "rem", label: "rem" },
-];
-
 //ネストしたブロックを平坦化
 const flattenBlocks = (blocks) => {
 	return blocks.reduce((acc, block) => {

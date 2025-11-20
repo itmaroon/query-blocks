@@ -30,7 +30,7 @@ export default function save({ attributes }) {
 			data-choice_fields={JSON.stringify(choiceFields)}
 			data-block_map={JSON.stringify(blockMap)}
 		>
-			<div className="post_unit unit_hide">
+			<div className="template_unit unit_hide">
 				<InnerBlocks.Content />
 			</div>
 		</div>

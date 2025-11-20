@@ -13,8 +13,6 @@ import {
 	termToDispObj,
 } from "itmar-block-packages";
 
-// プロミスを格納する配列
-const promises = [];
 //タームによるフィルタを格納する変数
 let termQueryObj = []; //post-filterの入力値（ユーザー入力）
 //エンコードしたURLパラメータを格納する変数
@@ -49,7 +47,6 @@ const getBlockMapValue = (blockMap, fieldName) => {
 //カスタムフィールドを検索する関数
 const searchFieldObjects = (obj, fieldKey) => {
 	let result = null;
-
 	for (const key in obj) {
 		if (key === fieldKey) {
 			result = obj[key];
@@ -66,7 +63,7 @@ const searchFieldObjects = (obj, fieldKey) => {
 	return result;
 };
 
-//RestAPIで投稿データを取得する関数（Promiseを返す）
+//RestAPIで投稿データを取得する関数
 const getSearchRecordsFromAPI = async (query) => {
 	const queryString = new URLSearchParams(query).toString();
 
@@ -75,6 +72,7 @@ const getSearchRecordsFromAPI = async (query) => {
 			`${query_blocks.home_url}/wp-json/itmar-rest-api/v1/search?${queryString}`,
 		);
 		const data = await response.json();
+		console.log(data);
 
 		return data;
 
@@ -84,7 +82,7 @@ const getSearchRecordsFromAPI = async (query) => {
 	}
 };
 
-//RestAPIでメディア情報を取得する関数（Promiseを返す）
+//RestAPIでメディア情報を取得する関数
 const getMediaInfoFromAPI = async (mediaId) => {
 	const path = `/wp/v2/media/${mediaId}`;
 	const mediaInfo = await apiFetch({ path });
@@ -241,22 +239,12 @@ const getTermsInfo = (pickup, post, disp_taxonomies) => {
 	return result;
 };
 //フロントエンドで取得した投稿データで書き換える関数
-const ModifyFieldElement = (element, post, blockMap, dispTermsDom) => {
+const ModifyFieldElement = (element, post, blockMap, post_num) => {
 	// 最上位要素がa要素の時はそのhref属性を書き換え
 	if (element && element.tagName === "A") {
 		element.setAttribute("href", post.link);
 	}
-	//ターム表示するDOM要素を格納する親要素を取得
-	const termElements = element.querySelectorAll(`[class*="term_"]`);
-	const termParentElement = termElements[0]?.parentElement;
-	if (termParentElement) {
-		// 既存のterm_ クラスの要素を削除
-		termElements.forEach((termElement) => termElement.remove());
-		// 親要素内に dispTermsDom の要素（フロントエンドでダイレクトに読み込んだ情報）を追加
-		dispTermsDom.forEach((dom) => termParentElement.appendChild(dom));
-	}
 
-	// newPostUnitのすべての子要素を取得
 	const allElements = element.getElementsByTagName("*");
 
 	// 各要素を反復処理
@@ -268,28 +256,31 @@ const ModifyFieldElement = (element, post, blockMap, dispTermsDom) => {
 
 		// field_を含むクラス名があるかチェック
 		const hasFieldClass = classNames.some((className) =>
-			className.startsWith("field_"),
+			className.startsWith("sp_field_"),
 		);
 
 		if (hasFieldClass) {
 			// field_を含むクラス名がある場合、そのクラス内のDOM要素を書き換える
 			const fieldClassName = classNames.find((className) =>
-				className.startsWith("field_"),
+				className.startsWith("sp_field_"),
 			);
+
 			// field_を除いたクラス名を取得
-			const fieldName = fieldClassName.replace("field_", "");
+			const fieldName = fieldClassName.replace("sp_field_", "");
 			// postオブジェクト内で、そのクラス名をキーとする値を取得
 
 			//カスタムフィールドの値取得
+			const fieldNameWithoutPrefix = fieldName.replace(/^(acf_|meta_)/, "");
 			const costumFieldValue = searchFieldObjects(
 				{ ...post.acf, ...post.meta },
-				fieldName,
+				fieldNameWithoutPrefix,
 			);
 			//ビルトインのフィールド名があればその値をとり、なければカスタムフィールドの値をとる
 			const fieldValue = post[fieldName] || costumFieldValue;
 			//フィールドとブロックの対応マップからブロック名を抽出
 
 			const blockName = getBlockMapValue(blockMap, fieldName);
+
 			//フィールドの種類によって書き換え方が変わる
 			switch (blockName) {
 				case "itmar/design-title":
@@ -313,7 +304,8 @@ const ModifyFieldElement = (element, post, blockMap, dispTermsDom) => {
 									//デザインタイトルのタイトルタイプがdateならフォーマットをあてる
 									if (titleType === "date") {
 										//date_formatを取り出す
-										const dateFormat = element.getAttribute("data-date_format");
+										const dateFormat =
+											element.getAttribute("data-user_format") || "%s";
 										divElement.textContent = format(
 											dateFormat,
 											fieldValue,
@@ -364,40 +356,17 @@ const ModifyFieldElement = (element, post, blockMap, dispTermsDom) => {
 							break;
 						}
 
-						promises.push(
-							getMediaInfoFromAPI(fieldValue)
-								.then((data) => {
-									// 必要なデータを抽出
-									const newSrc = data.source_url;
-									const newSrcset = Object.entries(data.media_details.sizes)
-										.map(([name, size]) => `${size.source_url} ${size.width}w`)
-										.join(", ");
-									const newWidth = data.media_details.width;
-									const newHeight = data.media_details.height;
-									const newAlt = data.alt_text;
-
-									// img要素の属性を更新
-									iElement.src = newSrc;
-									iElement.srcset = newSrcset;
-									iElement.width = newWidth;
-									iElement.height = newHeight;
-									iElement.alt = newAlt;
-									// クラス名を更新
-									iElement.classList.remove(`wp-image-${currentMediaId}`);
-									iElement.classList.add(`wp-image-${fieldValue}`);
-								})
-								.catch((error) => {
-									//画像が見つからない場合の処理
-									if (error.data?.status == 404) {
-										iElement.classList.remove(`wp-image-${currentMediaId}`);
-										iElement.classList.add("wp-image-000");
-										iElement.removeAttribute("srcset");
-										iElement.style.objectFit = "contain";
-										iElement.src = `${query_blocks.plugin_url}/assets/no-image.png`;
-										iElement.alt = __("There is no image set.", "query-blocks");
-									}
-								}),
-						);
+						// img要素の属性を更新
+						iElement.src = fieldValue.source_url;
+						iElement.srcset = Object.entries(fieldValue.media_details.sizes)
+							.map(([name, size]) => `${size.source_url} ${size.width}w`)
+							.join(", ");
+						iElement.width = fieldValue.media_details.width;
+						iElement.height = fieldValue.media_details.height;
+						iElement.alt = fieldValue.alt_text;
+						// クラス名を更新
+						iElement.classList.remove(`wp-image-${currentMediaId}`);
+						iElement.classList.add(`wp-image-${fieldValue.id}`);
 					}
 
 					break;
@@ -405,6 +374,60 @@ const ModifyFieldElement = (element, post, blockMap, dispTermsDom) => {
 					const buttonElement = element.querySelector("button");
 					const valWithPrm = `${fieldValue}${setUrlParam}`;
 					buttonElement.setAttribute("data-selected_page", valWithPrm);
+					break;
+				case "itmar/slide-mv":
+					jQuery(function ($) {
+						const $el = $(element);
+						//swiper独自ID
+
+						const swiperId = `slide-${post_num}`;
+						const clone_swiper = $el.find(".swiper");
+						//IDの付け直し
+						clone_swiper.removeData("swiper-id");
+						clone_swiper.attr("data-swiper-id", swiperId);
+						const classPrefixMap = {
+							prev: "swiper-button-prev",
+							next: "swiper-button-next",
+							pagination: "swiper-pagination",
+							scrollbar: "swiper-scrollbar",
+						};
+
+						Object.entries(classPrefixMap).forEach(([suffix, baseClass]) => {
+							const $target = clone_swiper.parent().find(`.${baseClass}`);
+							$target.each(function () {
+								const currentClasses = $(this).attr("class").split(/\s+/);
+								const filteredClasses = currentClasses.filter(
+									(cls) => cls === baseClass,
+								);
+								// 新しい `${swiperId}-${suffix}` を追加
+								filteredClasses.push(`${swiperId}-${suffix}`);
+								$(this).attr("class", filteredClasses.join(" "));
+							});
+						});
+						//swiper-wrapper内からswiper-slideを抽出
+						const wrapper = clone_swiper.find(".swiper-wrapper");
+						const templateSlide = wrapper.find(".swiper-slide").first();
+						//swiper-wrapperオブジェクトをクリア
+						clone_swiper.empty();
+						// 新しい swiper-wrapper を作成
+						const newWrapper = $('<div class="swiper-wrapper"></div>');
+						// valueの件数にあわせて、ひな型を複製
+
+						fieldValue.forEach((imgNode) => {
+							const newSlide = templateSlide.clone(true); // trueでイベントもコピー
+							//img要素を取り出し画像を差し替え
+							const $img = newSlide.find("img").first();
+							if (imgNode.type === "image") {
+								$img.attr("src", imgNode.url);
+								$img.attr("alt", imgNode.alt || "");
+								newWrapper.append(newSlide);
+							}
+						});
+						//新しいswiper-wrapperを追加
+						clone_swiper.append(newWrapper);
+						//swiper初期化
+						slideBlockSwiperInit(clone_swiper);
+					});
 					break;
 			}
 		}
@@ -501,6 +524,39 @@ const pickupChange = (pickup, fillFlg, currentPage = 0) => {
 	const dispTaxonomies = JSON.parse(pickup.dataset.disp_taxonomies);
 	const blockMap = JSON.parse(pickup.dataset.block_map);
 
+	// ひな型の要素をスケルトンスクリーンでラップする
+	const targets = pickup.querySelectorAll(
+		".unit_hide .wp-block-itmar-design-title, .wp-block-itmar-design-button, .itmar_ex_block",
+	);
+
+	targets.forEach((el) => {
+		// <div class="hide-wrapper"></div> を作成
+		const wrapper = document.createElement("div");
+		wrapper.className = "hide-wrapper";
+
+		// el の前に wrapper を挿入して、el を wrapper の中に移動
+		el.parentNode.insertBefore(wrapper, el);
+		wrapper.appendChild(el);
+
+		// 中身を非表示
+		el.style.visibility = "hidden";
+	});
+
+	//swiperが親要素でない場合
+	if (!fillFlg) {
+		//ひな型部分を表示
+		const template = pickup.querySelector(".template_unit");
+		if (!template) return; // 念のため防御
+		template.style.display = "block";
+
+		// まず .template_unit 以外の子要素を削除
+		Array.from(pickup.children).forEach((child) => {
+			if (!child.classList.contains("template_unit")) {
+				child.remove();
+			}
+		});
+	}
+
 	//タームのセレクトオブジェクト
 	const selectTerms =
 		termParamObj && Object.keys(termParamObj).length > 0
@@ -591,62 +647,9 @@ const pickupChange = (pickup, fillFlg, currentPage = 0) => {
 				}
 			}
 
-			//swiperFlgの値でデータの入れ替え要素を峻別
-			const divElements = !fillFlg
-				? Array.from(pickup.querySelectorAll(".post_unit")[0].children)
-				: Array.from(pickup.parentElement.children).filter(
-						(child) =>
-							child !== pickup && child.classList.contains("swiper-slide"),
-				  );
-			if (!divElements.length > 0) return; //post_unitクラスの要素がなければリターン
-
-			divElements.forEach((divs, index) => {
-				//表示なしメッセージのブロックは対象外
-				if (divs.querySelector(".itmar_emptyGroup") !== null) {
-					return;
-				}
-				//データなしか否かの判定
-				if (!posts[index]) {
-					divs.style.display = "none"; // 要素を非表示にする
-				} else {
-					//ターム表示のためのDOM要素の配列
-					const dispTermsDom = getTermsInfo(
-						pickup,
-						posts[index],
-						dispTaxonomies,
-					);
-
-					//レンダリング指定のあるフィールドの内容をpostの内容によって書き換え
-					ModifyFieldElement(divs, posts[index], blockMap, dispTermsDom);
-					divs.style.display = "block"; // 要素を再表示する
-				}
-			});
-
-			//対象なしメッセージブロック
-			const emptyMess = divElements.find(
-				(div) => div.querySelector(".itmar_emptyGroup") !== null,
-			);
-			//postsが空でなければ非表示
-			if (emptyMess) {
-				if (posts.length > 0) {
-					emptyMess.style.display = "none";
-				} else {
-					emptyMess.style.display = "block";
-				}
-			}
-
-			// すべてのプロミスが完了したら非表示のクラスを外す
-			Promise.all(promises)
-				.then(() => {
-					const postUnits = fillFlg
-						? document.querySelectorAll(".swiper-slide")
-						: document.querySelectorAll(".post_unit");
-					postUnits.forEach((unit) => {
-						//非表示のクラスを外す
-						unit.classList.remove("unit_hide");
-					});
-				})
-				.catch((error) => console.error(error));
+			//ひな型を選択して取得した投稿データを流す
+			const target_block = !fillFlg ? pickup : pickup.parentElement;
+			replaceContent(posts, target_block, blockMap, fillFlg);
 
 			//ページネーションのレンダリング
 			const pagenationRoot = document.getElementById(`page_${pickupId}`);
@@ -867,12 +870,131 @@ const pickupChange = (pickup, fillFlg, currentPage = 0) => {
 		.catch((error) => console.error(error));
 };
 
+//テンプレートにコンテンツを流し込む関数
+const replaceContent = async (pickpData, target_block, block_map, fillFlg) => {
+	//通常のpickup
+	if (!fillFlg) {
+		const template = target_block.querySelector(".template_unit");
+		if (!template) return; // 念のため防御
+
+		// ② .template_unit の「子要素」を配列にする
+		const target_array = Array.from(template.children);
+
+		//pickupDataの内容によってレンダリングされたDOM要素からデザインの要素を選択
+		for (const [i, pickup] of pickpData.entries()) {
+			const featuredMedia = pickup.featured_media;
+			let aspectRatio = 1.2;
+			if (featuredMedia) {
+				const mediaInfo = await getMediaInfoFromAPI(featuredMedia);
+				if (mediaInfo) {
+					pickup.featured_media = mediaInfo;
+					aspectRatio =
+						mediaInfo.media_details.width / mediaInfo.media_details.height;
+				}
+			}
+			// ③ 配列から1つ選別（selectTemplateUnit が要素を返す想定）
+			const selected = selectTemplateUnit(target_array, aspectRatio, i + 1);
+			if (!selected) return;
+
+			// ④ 選ばれた要素をクローンして target_block に挿入
+			const clone = selected.cloneNode(true);
+			const targets = clone.querySelectorAll(
+				".hide-wrapper > .wp-block-itmar-design-title, .wp-block-itmar-design-button, .itmar_ex_block",
+			);
+
+			targets.forEach((el) => {
+				// visibility を元に戻す（jQuery: $(this).css("visibility", "");）
+				el.style.visibility = "";
+
+				// unwrap 相当（親の .hide-wrapper を外す）
+				const parent = el.parentElement;
+				if (parent && parent.classList.contains("hide-wrapper")) {
+					const grandParent = parent.parentElement;
+					if (grandParent) {
+						// 親要素の直前に el を移動させてから、親を削除
+						grandParent.insertBefore(el, parent);
+						grandParent.removeChild(parent);
+					}
+				}
+			});
+
+			target_block.appendChild(clone);
+			ModifyFieldElement(clone, pickup, block_map, i);
+		}
+		//ひな型部分は非表示
+		template.style.display = "none"; // jQueryの .hide() 相当
+		// template 内の .hide-wrapper を全部探す
+		const wrappers = template.querySelectorAll(".hide-wrapper");
+		wrappers.forEach((wrapper) => {
+			const parent = wrapper.parentElement;
+			if (!parent) return;
+
+			// .hide-wrapper の中身をすべて親の直下に移動
+			while (wrapper.firstChild) {
+				parent.insertBefore(wrapper.firstChild, wrapper);
+			}
+
+			// 空になった .hide-wrapper を削除
+			parent.removeChild(wrapper);
+		});
+	} else {
+		const target_array = Array.from(target_block.children);
+		for (const [i, pickup] of pickpData.entries()) {
+			const featuredMedia = pickup.featured_media;
+			if (featuredMedia) {
+				const mediaInfo = await getMediaInfoFromAPI(featuredMedia);
+				if (mediaInfo) {
+					pickup.featured_media = mediaInfo;
+				}
+			}
+			console.log(target_array[i]);
+			ModifyFieldElement(target_array[i], pickup, block_map, i);
+		}
+		target_array.forEach((parent) => {
+			if (!parent) return;
+
+			// 親の直下にある .hide-wrapper を探す
+			const wrapper = Array.from(parent.children).find((child) =>
+				child.classList.contains("hide-wrapper"),
+			);
+
+			if (!wrapper) return;
+
+			// wrapper の子要素を wrapper の前にどんどん移動
+			while (wrapper.firstChild) {
+				parent.insertBefore(wrapper.firstChild, wrapper);
+			}
+
+			// 最後に wrapper 自体を削除
+			parent.removeChild(wrapper);
+		});
+	}
+};
+
+//テンプレートを選択する関数
+function selectTemplateUnit(templateUnits, aspectRatio, itmNum) {
+	let retTemplate;
+	if (aspectRatio > 1.2 && itmNum % 2 !== 0) {
+		retTemplate = templateUnits[0];
+	} else if (aspectRatio > 1.2 && itmNum % 2 === 0) {
+		retTemplate = templateUnits[1];
+	} else if (aspectRatio < 0.8 && itmNum % 2 !== 0) {
+		retTemplate = templateUnits[2];
+	} else if (aspectRatio < 0.8 && itmNum % 2 === 0) {
+		retTemplate = templateUnits[3];
+	} else {
+		retTemplate = templateUnits[0];
+	}
+	return retTemplate;
+}
+
 //documentの読み込み後に処理
 document.addEventListener("DOMContentLoaded", () => {
 	//PickUp Postを取得
 	const pickupElement = document.querySelectorAll(
 		".wp-block-itmar-pickup-posts",
 	);
+
 	//URLからパラメータを取得してクエリーパラメータを取得
 	const params = new URLSearchParams(window.location.search);
 	const keyWord = params.get("keyWord");
@@ -962,9 +1084,19 @@ document.addEventListener("DOMContentLoaded", () => {
 			const swiperSlides = Array.from(parentElement.children).filter(
 				(child) => child !== pickup && child.classList.contains("swiper-slide"),
 			);
-			// 'unit_hide' クラスをswiper-slide要素に追加
+			//'unit_hide' クラスをswiper-slide要素に追加
 			swiperSlides.forEach((slide) => {
-				slide.classList.add("unit_hide");
+				// <div class="hide-wrapper"></div> を作成
+				const wrapper = document.createElement("div");
+				wrapper.className = "hide-wrapper";
+
+				// 1. slide の子ノードを全部 wrapper の中に移動
+				while (slide.firstChild) {
+					wrapper.appendChild(slide.firstChild);
+				}
+
+				// 2. wrapper を slide の子要素として追加
+				slide.appendChild(wrapper);
 			});
 			//swiperにデータ注入
 			pickupChange(pickup, true);

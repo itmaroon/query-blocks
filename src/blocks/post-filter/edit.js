@@ -200,9 +200,9 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	}, [innerBlocks]);
 	//pickupの変化に合わせてインナーブロック内のDesign Checkボックスを変更
 	useEffect(() => {
-		const checkedArray = pickup?.attributes.choiceTerms.map(
-			(item) => item.term.slug,
-		);
+		const checkedArray = pickup
+			? pickup.attributes.choiceTerms.map((item) => item.term.slug)
+			: [];
 		checkboxBlocks.forEach((block) => {
 			// updateBlockAttributesを使ってinputValueを更新
 			updateBlockAttributes(block.clientId, {
@@ -303,6 +303,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 						...searchBoxAttributes, //既存属性にクラス名があるときは上書きされる
 						...defaultWord, //既入力キーワードが残っている場合
 					});
+
 					const searchButton = createBlock("itmar/design-button", {
 						className: "itmar_filter_searchbutton",
 						...searchButtonAttributes,
