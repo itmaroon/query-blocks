@@ -6,7 +6,7 @@
  * Description:       A collection of blocks that display WordPress posts
  * Requires at least: 6.4
  * Requires PHP:      8.1.22
- * Version:           1.1.0
+ * Version:           1.1.1
  * Author:            Web Creator ITmaroon
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
@@ -33,8 +33,11 @@ if (!function_exists('get_plugin_data')) {
 }
 
 require_once __DIR__ . '/vendor/itmar/loader-package/src/register_autoloader.php';
+
+use Itmar\BlockClassPackage\ItmarAccessClass;
+
 $block_entry = new \Itmar\BlockClassPackage\ItmarEntryClass();
-$block_access = new \Itmar\BlockClassPackage\ItmarAccessClass();
+
 
 //ブロックの登録
 add_action('init', function () use ($block_entry) {
@@ -55,7 +58,12 @@ add_action('admin_notices', function () use ($block_entry) {
 });
 
 //アクセスカウンターのセット
-add_action('template_redirect', array($block_access, 'set_post_count'));
+function itmar_register_access_counter()
+{
+	$counter = new ItmarAccessClass();
+	$counter->hook();
+}
+add_action('plugins_loaded', 'itmar_register_access_counter');
 
 function itmar_query_blocks_front()
 {
@@ -277,7 +285,7 @@ function itmar_search_endpoint($request)
 				'type' => get_post_type(),
 				'link' => get_permalink(),
 				'title' => array('rendered' => get_the_title()),
-				//'content' => array('rendered' => apply_filters('the_content', get_the_content())),
+				'content' => array('rendered' => apply_filters('the_content', get_the_content())),
 				'excerpt' => array('rendered' => get_the_excerpt()),
 				'author' => (int) get_the_author_meta('ID'),
 				'featured_media' => get_post_thumbnail_id($post_id),

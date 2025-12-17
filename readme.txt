@@ -3,7 +3,7 @@ Contributors:      itmaroon
 Tags:              block, post, taxsonomy, field, query
 Requires at least: 6.4
 Tested up to:      6.8
-Stable tag:        1.1.0
+Stable tag:        1.1.1
 License:           GPL-2.0-or-later
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
 Requires PHP: 8.2.10
@@ -76,6 +76,9 @@ OR…
 8. Post Pagination forward/backward navigation
 
 == Changelog ==
+= 1.1.1 =
+- Added a data-post-id attribute to each DOM element of front-end post data to record the post ID.
+
 = 1.1.0 =
 - Regarding the method of loading composer components, a mechanism has been introduced that does not conflict with other plugins. Accordingly, the composer components have been updated.
 - Operation check with WordPress 6.8

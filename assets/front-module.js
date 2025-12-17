@@ -11,6 +11,7 @@ import {
 	restTaxonomies,
 	getPeriodQuery,
 	termToDispObj,
+	MasonryControl,
 } from "itmar-block-packages";
 
 //タームによるフィルタを格納する変数
@@ -72,7 +73,6 @@ const getSearchRecordsFromAPI = async (query) => {
 			`${query_blocks.home_url}/wp-json/itmar-rest-api/v1/search?${queryString}`,
 		);
 		const data = await response.json();
-		console.log(data);
 
 		return data;
 
@@ -88,6 +88,38 @@ const getMediaInfoFromAPI = async (mediaId) => {
 	const mediaInfo = await apiFetch({ path });
 	return mediaInfo;
 };
+
+// ACF の値から画像URLを取り出すユーティリティ
+function extractImageUrlFromAcfValue(value) {
+	if (!value) return null;
+
+	// URL文字列そのもの
+	if (typeof value === "string") {
+		if (/^https?:\/\//.test(value)) return value;
+		return null; // IDだけなどはここでは扱わない
+	}
+
+	// オブジェクト形式 { url: "..."} や { sizes: { large: "..." } }
+	if (typeof value === "object") {
+		if (value.url) return value.url;
+		if (value.sizes?.large) return value.sizes.large;
+		if (value.sizes?.full) return value.sizes.full;
+	}
+
+	return null;
+}
+
+// ネストパス（"option_img_group.option_1" など）でオブジェクトを辿る
+function getNested(obj, pathStr) {
+	if (!obj || !pathStr) return undefined;
+	const keys = pathStr.split(".");
+	let cur = obj;
+	for (const key of keys) {
+		if (cur == null) return undefined;
+		cur = cur[key];
+	}
+	return cur;
+}
 
 const getSelectedTaxonomyTerms = (choiceTerms, taxRelateType) => {
 	const taxonomyTerms = choiceTerms.reduce((acc, { taxonomy, term }) => {
@@ -190,69 +222,29 @@ const addPriodListner = (pickup, fillFlg, dateContainer, name) => {
 		});
 	}
 };
-//ターム情報と表示用のDOM要素を取得する関数
-const getTermsInfo = (pickup, post, disp_taxonomies) => {
-	// disp_taxonomies に一致するキーを抽出
-	const filteredTerms = Object.fromEntries(
-		Object.entries(post.terms).filter(([key]) => disp_taxonomies.includes(key)),
-	);
-	// term-[キー]-[slug]の配列を生成
-	const result = Object.entries(filteredTerms).flatMap(([key, values]) =>
-		values.map((item) => {
-			//既にあるターム表示のDOM要素をひな型とするために取得
-			const termElement = pickup.querySelectorAll(`[class*="term_${key}"]`)[0];
-			if (termElement) {
-				//ひな型からクローンを生成
-				const cloneTermElm = termElement.cloneNode(true);
-				//ｈタグ内の要素を書き換え
-				const hTags = cloneTermElm.querySelectorAll("h1, h2, h3, h4, h5, h6");
-				hTags.forEach((hTag) => {
-					// h タグ内の <div> 要素を探す
-					const divTag = hTag.querySelector("div");
-					if (divTag) {
-						// <div> のテキストノードを item.name に書き換える
-						divTag.textContent = item.name;
-					}
-				});
 
-				return cloneTermElm;
-			} else {
-				//ひな型がない場合の処理
-				// originalElement が undefined の場合、新しい要素を生成
-				const clonedElement = document.createElement("div");
-				const h2Element = document.createElement("h2");
-				const divElement = document.createElement("div");
-
-				// <div>のテキストノードを item.name に設定
-				divElement.textContent = item.name;
-
-				// <h2>に<div>を追加
-				h2Element.appendChild(divElement);
-
-				// 新しい要素に<h2>を追加
-				clonedElement.appendChild(h2Element);
-				return cloneTermElm;
-			}
-		}),
-	);
-
-	return result;
-};
 //フロントエンドで取得した投稿データで書き換える関数
-const ModifyFieldElement = (element, post, blockMap, post_num) => {
+const ModifyFieldElement = async (
+	element,
+	post,
+	taxTermObjects,
+	blockMap,
+	post_num,
+) => {
 	// 最上位要素がa要素の時はそのhref属性を書き換え
 	if (element && element.tagName === "A") {
 		element.setAttribute("href", post.link);
 	}
-
-	const allElements = element.getElementsByTagName("*");
+	//静的コレクションで取得すること
+	//element.setAttribute("data-post-id", post.id);
+	const allElements = element.querySelectorAll("*");
 
 	// 各要素を反復処理
 	for (let i = 0; i < allElements.length; i++) {
-		const element = allElements[i];
+		const el = allElements[i];
 
 		// 要素のクラス名を取得
-		const classNames = element.className.split(" ");
+		const classNames = el.className.split(" ");
 
 		// field_を含むクラス名があるかチェック
 		const hasFieldClass = classNames.some((className) =>
@@ -277,6 +269,7 @@ const ModifyFieldElement = (element, post, blockMap, post_num) => {
 			);
 			//ビルトインのフィールド名があればその値をとり、なければカスタムフィールドの値をとる
 			const fieldValue = post[fieldName] || costumFieldValue;
+
 			//フィールドとブロックの対応マップからブロック名を抽出
 
 			const blockName = getBlockMapValue(blockMap, fieldName);
@@ -286,17 +279,17 @@ const ModifyFieldElement = (element, post, blockMap, post_num) => {
 				case "itmar/design-title":
 					//クラス名にitmar_link_blockが含まれるときに処理
 					if (classNames.includes("itmar_link_block")) {
-						const aElement = element.querySelector("a");
+						const aElement = el.querySelector("a");
 						aElement.setAttribute("href", fieldValue);
 					} else {
 						//クラス名にitmar_link_blockが含まれないときに処理
-						const hElement = element.querySelector("h1, h2, h3, h4, h5, h6");
+						const hElement = el.querySelector("h1, h2, h3, h4, h5, h6");
 
 						if (hElement) {
 							// h要素内のdivを探す
 							const divElement = hElement.querySelector("div");
 							//titleTypeを取り出す
-							const titleType = element.getAttribute("data-title_type");
+							const titleType = el.getAttribute("data-title_type");
 
 							if (divElement) {
 								// divのテキストノードを書き換える
@@ -305,7 +298,7 @@ const ModifyFieldElement = (element, post, blockMap, post_num) => {
 									if (titleType === "date") {
 										//date_formatを取り出す
 										const dateFormat =
-											element.getAttribute("data-user_format") || "%s";
+											el.getAttribute("data-user_format") || "%s";
 										divElement.textContent = format(
 											dateFormat,
 											fieldValue,
@@ -328,16 +321,15 @@ const ModifyFieldElement = (element, post, blockMap, post_num) => {
 				case "core/paragraph":
 					// pの内容を書き換える
 					if (fieldName === "excerpt") {
-						element.innerHTML = fieldValue.rendered;
+						el.innerHTML = fieldValue.rendered;
 					} else {
-						element.innerHTML = fieldValue;
+						el.innerHTML = fieldValue;
 					}
 
 					break;
 				case "core/image":
-					const iElement = element.querySelector("img");
+					const iElement = el.querySelector("img");
 					// 現在のmediaIdを取得（イメージ要素にクラス名がある場合）
-
 					const currentMediaId = iElement.classList
 						.toString()
 						.match(/wp-image-(\d+)/)
@@ -345,7 +337,7 @@ const ModifyFieldElement = (element, post, blockMap, post_num) => {
 						: undefined;
 
 					if (iElement) {
-						if (!fieldValue && currentMediaId) {
+						if (!fieldValue && !currentMediaId) {
 							//mediaIDがセットされていなければノーイメージ画像を設定して終了
 							iElement.classList.remove(`wp-image-${currentMediaId}`);
 							iElement.classList.add("wp-image-000");
@@ -371,13 +363,13 @@ const ModifyFieldElement = (element, post, blockMap, post_num) => {
 
 					break;
 				case "itmar/design-button":
-					const buttonElement = element.querySelector("button");
+					const buttonElement = el.querySelector("button");
 					const valWithPrm = `${fieldValue}${setUrlParam}`;
 					buttonElement.setAttribute("data-selected_page", valWithPrm);
 					break;
 				case "itmar/slide-mv":
 					jQuery(function ($) {
-						const $el = $(element);
+						const $el = $(el);
 						//swiper独自ID
 
 						const swiperId = `slide-${post_num}`;
@@ -412,23 +404,196 @@ const ModifyFieldElement = (element, post, blockMap, post_num) => {
 						// 新しい swiper-wrapper を作成
 						const newWrapper = $('<div class="swiper-wrapper"></div>');
 						// valueの件数にあわせて、ひな型を複製
-
-						fieldValue.forEach((imgNode) => {
-							const newSlide = templateSlide.clone(true); // trueでイベントもコピー
-							//img要素を取り出し画像を差し替え
-							const $img = newSlide.find("img").first();
-							if (imgNode.type === "image") {
-								$img.attr("src", imgNode.url);
-								$img.attr("alt", imgNode.alt || "");
-								newWrapper.append(newSlide);
-							}
-						});
+						if (fieldValue) {
+							fieldValue.forEach((imgNode) => {
+								const newSlide = templateSlide.clone(true); // trueでイベントもコピー
+								//img要素を取り出し画像を差し替え
+								const $img = newSlide.find("img").first();
+								if (imgNode.type === "image") {
+									$img.attr("src", imgNode.url);
+									$img.attr("alt", imgNode.alt || "");
+									newWrapper.append(newSlide);
+								}
+							});
+						}
 						//新しいswiper-wrapperを追加
 						clone_swiper.append(newWrapper);
 						//swiper初期化
 						slideBlockSwiperInit(clone_swiper);
 					});
 					break;
+			}
+		}
+
+		// tax_を含むクラス名があるかチェック
+		const hasTaxClass = classNames.some((className) =>
+			className.startsWith("tax_"),
+		);
+		if (hasTaxClass) {
+			//taxTermObjectsに値がわたっているか
+			if (taxTermObjects.length > 0) {
+				// tax_を含むクラス名がある場合、そのクラス内のDOM要素を書き換える
+				const taxClassName = classNames.find((className) =>
+					className.startsWith("tax_"),
+				);
+				// tax_を除いたクラス名を取得
+				const taxName = taxClassName.replace("tax_", "");
+				//親要素を取得
+				const parent = el.parentElement;
+
+				// taxTermObjectsで、taxonomy名をキーとする値を取得
+				for (const obj of taxTermObjects) {
+					const entries = Object.entries(obj);
+
+					if (entries.length === 0) continue;
+
+					const [tax, values] = entries[0];
+
+					if (tax !== taxName) {
+						// このオブジェクトのタクソノミーが taxName と違う場合はスキップ
+						continue;
+					}
+
+					// values が 0 件なら、この DOM 要素を削除してスキップ
+					if (!values || values.length === 0) {
+						el.remove();
+						continue;
+					}
+					// values が配列であることを想定（ターム名の配列）
+					values.forEach((termName, index) => {
+						// 1つ目のタームは元の el を使い、それ以降は複製して兄弟要素に追加
+						const cloneTermElm = index === 0 ? el : el.cloneNode(true);
+
+						// hタグ内の要素を書き換え
+						const hTags = cloneTermElm.querySelectorAll(
+							"h1, h2, h3, h4, h5, h6",
+						);
+						hTags.forEach((hTag) => {
+							// h タグ内の <div> 要素を探す
+							const divTag = hTag.querySelector("div");
+							if (divTag) {
+								// <div> のテキストノードを termName に書き換え
+								divTag.textContent = termName;
+							}
+						});
+
+						// 2個目以降は DOM に追加
+						if (index > 0) {
+							parent.appendChild(cloneTermElm);
+						}
+					});
+				}
+			}
+		}
+		//itmaroon-masonry-gridをクラス名として持つ要素を取得
+		const hasMasonryGridClass = classNames.includes("itmar-masonry-grid");
+
+		if (hasMasonryGridClass) {
+			// ★ この el がマソンリーのグリッド要素
+			const gridEl = el;
+			if (gridEl.getAttribute("data-source-type") === "dynamic") {
+				//data-source-typeがdynamicのときだけ
+				// 1) data-choice-fields を配列に戻す
+				let choiceFields = [];
+				const choiceAttr = gridEl.getAttribute("data-choice-fields");
+
+				if (choiceAttr) {
+					try {
+						choiceFields = JSON.parse(choiceAttr); // ["content","featured_media","acf_gallery",...]
+					} catch (e) {
+						console.error("Failed to parse data-choice-fields:", e);
+						choiceFields = [];
+					}
+				}
+
+				// 2) choiceFields に従って post から画像URLを集める
+				const images = [];
+
+				for (const field of choiceFields) {
+					// 本文内の画像 (content)
+					if (field === "content") {
+						const html = post?.content?.rendered || post?.content || "";
+						if (html) {
+							const tmp = document.createElement("div");
+							tmp.innerHTML = html;
+							const imgs = tmp.querySelectorAll("img");
+							imgs.forEach((img) => {
+								if (img.src) {
+									images.push({
+										url: img.src,
+										alt: img.alt || "",
+										type: "content",
+										field: "content",
+									});
+								}
+							});
+						}
+					}
+					// アイキャッチ画像 (featured_media)
+					else if (field === "featured_media") {
+						const url = post.featured_media.source_url;
+						if (url) {
+							images.push({
+								url,
+								alt: post.title?.rendered || post.title || "",
+								type: "featured_media",
+								field: "featured_media",
+							});
+						}
+					}
+					// ACF 系 (acf_***)
+					else if (field.startsWith("acf_")) {
+						// "acf_gallery" や "acf_option_img_group.option_1" など
+						const acfPath = field.slice(4); // "acf_" 以降 → "gallery", "option_img_group.option_1" など
+						const acfRoot = post.acf || {};
+						const value = getNested(acfRoot, acfPath);
+
+						if (!value) return;
+
+						// gallery (配列) の場合
+						if (Array.isArray(value)) {
+							value.forEach((item) => {
+								const url = extractImageUrlFromAcfValue(item);
+								if (url) {
+									images.push({
+										url,
+										alt: item?.alt || "",
+										type: "acf_gallery",
+										field,
+									});
+								}
+							});
+						} else {
+							// 単一画像フィールド
+							const media_info = await getMediaInfoFromAPI(value);
+							if (media_info) {
+								images.push({
+									url: media_info.source_url,
+									alt: media_info.alt_text || "",
+									type: "acf_image",
+									field,
+								});
+							}
+						}
+					}
+				}
+				//レスポンシブのフラグ
+				const isMobile =
+					typeof mobile_flg !== "undefined"
+						? mobile_flg
+						: window.matchMedia("(max-width: 767px)").matches;
+				//設定されたカラム数の取得
+				const mobileColumns = gridEl.getAttribute("data-mobile-columns");
+				const defaultColumns = gridEl.getAttribute("data-default-columns");
+
+				const columns = isMobile
+					? parseInt(mobileColumns || defaultColumns || "1", 10)
+					: parseInt(defaultColumns || "1", 10);
+				//マソンリーレイアウト初期化
+				MasonryControl(gridEl, images, {
+					columns,
+					renderItems: true, // フロントではこの関数内で <figure> を描画
+				});
 			}
 		}
 	}
@@ -649,7 +814,15 @@ const pickupChange = (pickup, fillFlg, currentPage = 0) => {
 
 			//ひな型を選択して取得した投稿データを流す
 			const target_block = !fillFlg ? pickup : pickup.parentElement;
-			replaceContent(posts, target_block, blockMap, fillFlg);
+
+			replaceContent(
+				posts,
+				target_block,
+				blockMap,
+				fillFlg,
+				pickupType,
+				dispTaxonomies,
+			);
 
 			//ページネーションのレンダリング
 			const pagenationRoot = document.getElementById(`page_${pickupId}`);
@@ -871,7 +1044,14 @@ const pickupChange = (pickup, fillFlg, currentPage = 0) => {
 };
 
 //テンプレートにコンテンツを流し込む関数
-const replaceContent = async (pickpData, target_block, block_map, fillFlg) => {
+const replaceContent = async (
+	pickpData,
+	target_block,
+	block_map,
+	fillFlg,
+	pickupType,
+	dispTaxonomies,
+) => {
 	//通常のpickup
 	if (!fillFlg) {
 		const template = target_block.querySelector(".template_unit");
@@ -893,7 +1073,10 @@ const replaceContent = async (pickpData, target_block, block_map, fillFlg) => {
 				}
 			}
 			// ③ 配列から1つ選別（selectTemplateUnit が要素を返す想定）
-			const selected = selectTemplateUnit(target_array, aspectRatio, i + 1);
+			const selected =
+				pickupType === "single"
+					? target_array[0]
+					: selectTemplateUnit(target_array, aspectRatio, i + 1);
 			if (!selected) return;
 
 			// ④ 選ばれた要素をクローンして target_block に挿入
@@ -918,8 +1101,29 @@ const replaceContent = async (pickpData, target_block, block_map, fillFlg) => {
 				}
 			});
 
+			//投稿に紐づいたターム情報を取得
+			const taxTermObjects = [];
+			for (const tax of dispTaxonomies) {
+				const term_info = await apiFetch({
+					path: `/wp/v2/${tax}?post=${pickup.id}`,
+				});
+
+				// ターム名だけの配列を作成
+				const termNames = term_info.map((term) => term.name);
+
+				// タクソノミー名をキー、値をターム名配列とするオブジェクトを作成
+				const obj = {
+					[tax]: termNames,
+				};
+
+				taxTermObjects.push(obj);
+			}
+
+			//ブロック要素にデータを注入する
+
+			ModifyFieldElement(clone, pickup, taxTermObjects, block_map, i);
+			//データ注入後にブロック挿入
 			target_block.appendChild(clone);
-			ModifyFieldElement(clone, pickup, block_map, i);
 		}
 		//ひな型部分は非表示
 		template.style.display = "none"; // jQueryの .hide() 相当
@@ -947,8 +1151,7 @@ const replaceContent = async (pickpData, target_block, block_map, fillFlg) => {
 					pickup.featured_media = mediaInfo;
 				}
 			}
-			console.log(target_array[i]);
-			ModifyFieldElement(target_array[i], pickup, block_map, i);
+			ModifyFieldElement(target_array[i], pickup, [], block_map, i);
 		}
 		target_array.forEach((parent) => {
 			if (!parent) return;

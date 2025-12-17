@@ -120,6 +120,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				choiceTerms,
 				taxRelateType,
 			} = pickup.attributes;
+
 			//投稿タイプの名前取得のためのエンドポイント
 			const endPath = `/wp/v2/types/${selectedSlug}`;
 			//インナーブロックの配列
@@ -149,7 +150,8 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					//タイトル
 					if (pickupType === "single") {
 						crumbArray.push(
-							blockArrayAdd(pickup.attributes.posts[0]?.title.rendered),
+							//blockArrayAdd(pickup.attributes.posts[0]?.title.rendered),
+							blockArrayAdd("[title]"),
 						);
 					}
 					//Design Groupに入れてレンダリング

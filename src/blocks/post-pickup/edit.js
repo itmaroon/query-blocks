@@ -39,7 +39,7 @@ const custumFieldsToString = (obj, prefix = "") => {
 	return Object.entries(obj).flatMap(([key, value]) => {
 		const fieldName = prefix ? `${prefix}.${key}` : key; //prefixはグループ名
 
-		if (typeof value === "object" && value !== null && key != "acf_gallary") {
+		if (typeof value === "object" && value !== null && key != "acf_gallery") {
 			return custumFieldsToString(value, fieldName);
 		} else {
 			return fieldName;
@@ -250,7 +250,9 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	//表示フィールド変更によるインナーブロックの再構成
 	//ペースト対象のチェック配列
 	const sectionCount =
-		parentBlock?.name === "itmar/slide-mv"
+		pickupType === "single"
+			? 1
+			: parentBlock?.name === "itmar/slide-mv"
 			? parentBlock?.attributes.slideInfo.defaultPerView + 2
 			: 4;
 	const domType = parentBlock?.name === "itmar/slide-mv" ? "div" : "form";
@@ -259,6 +261,8 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	useRebuildChangeField(
 		blocksAttributesArray,
 		selectedFields,
+		pickupType,
+		dispTaxonomies,
 		sectionCount,
 		domType,
 		clientId,
