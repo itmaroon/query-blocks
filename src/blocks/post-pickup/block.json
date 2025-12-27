@@ -77,6 +77,7 @@
 			"type":"object",
 			"default":{
 				"title":"itmar/design-title",
+				"content":"core/post-content",
 				"date":"itmar/design-title",
 				"excerpt":"core/paragraph",
 				"featured_media":"core/image"

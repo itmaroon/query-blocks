@@ -72,13 +72,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	} = attributes;
 
 	// dispatch関数を取得
-	const {
-		replaceInnerBlocks,
-		insertBlocks,
-		removeBlocks,
-		removeBlock,
-		updateBlockAttributes,
-	} = useDispatch("core/block-editor");
+	const { replaceInnerBlocks } = useDispatch("core/block-editor");
 
 	const style_disp = [
 		__("For landscape images, odd numbers", "query-bloks"),
@@ -192,6 +186,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					// これらのキーは常に保持する
 					const alwaysKeep = [
 						"title",
+						"content",
 						"date",
 						"excerpt",
 						"featured_media",
@@ -211,7 +206,9 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					});
 
 					//blockMapを書き換え
-					const newBlockMap = { ...filteredBlockMap };
+					const newBlockMap = {
+						...filteredBlockMap,
+					};
 
 					setAttributes({ blockMap: newBlockMap });
 					//choiceFieldsから登録されていないカスタムフィールドを除外
@@ -494,7 +491,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 										<div>
 											<p>{`Unit ${index + 1} Style`}</p>
 											<p>
-												{parentBlock.name !== "itmar/slide-mv"
+												{parentBlock?.name !== "itmar/slide-mv"
 													? style_disp[index]
 													: ""}
 											</p>

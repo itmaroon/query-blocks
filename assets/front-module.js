@@ -12,6 +12,7 @@ import {
 	getPeriodQuery,
 	termToDispObj,
 	MasonryControl,
+	slideBlockSwiperInit,
 } from "itmar-block-packages";
 
 //タームによるフィルタを格納する変数
@@ -223,6 +224,83 @@ const addPriodListner = (pickup, fillFlg, dateContainer, name) => {
 	}
 };
 
+// el : .template_unit など親の DOM 要素 or jQuery
+// post_num : 一意な番号
+// fieldValue : 画像情報の配列（{ type:"image", url, alt, ... }）
+const reBuildSwiper = (el, post_num, fieldValue) => {
+	const $ = jQuery;
+
+	const $el = $(el);
+	if (!$el.length) return null;
+
+	// swiper 本体
+	const clone_swiper = $el.find(".swiper").first();
+	if (!clone_swiper.length) return null;
+
+	// swiper独自ID
+	const swiperId = `slide-${post_num}`;
+
+	// ID の付け直し
+	clone_swiper.removeData("swiper-id");
+	clone_swiper.attr("data-swiper-id", swiperId);
+
+	const classPrefixMap = {
+		prev: "swiper-button-prev",
+		next: "swiper-button-next",
+		pagination: "swiper-pagination",
+		scrollbar: "swiper-scrollbar",
+	};
+
+	// 親要素にあるナビゲーション類のクラス付け直し
+	Object.entries(classPrefixMap).forEach(([suffix, baseClass]) => {
+		const $target = clone_swiper.parent().find(`.${baseClass}`);
+		$target.each(function () {
+			const $btn = $(this);
+			const currentClasses = ($btn.attr("class") || "").split(/\s+/);
+			const filteredClasses = currentClasses.filter((cls) => cls === baseClass);
+			filteredClasses.push(`${swiperId}-${suffix}`);
+			$btn.attr("class", filteredClasses.join(" "));
+		});
+	});
+
+	// swiper-wrapper と最初の swiper-slide を取得
+	const wrapper = clone_swiper.find(".swiper-wrapper");
+	const templateSlide = wrapper.find(".swiper-slide").first();
+	if (!templateSlide.length) {
+		// ひな型が無いなら何もできないのでそのまま返す
+		return clone_swiper[0];
+	}
+
+	// ★ 元コードと同じく、.swiper 内を全クリア
+	clone_swiper.empty();
+
+	// 新しい swiper-wrapper を作成
+	const newWrapper = $('<div class="swiper-wrapper"></div>');
+
+	// value の件数にあわせて、ひな型を複製
+	if (fieldValue && Array.isArray(fieldValue)) {
+		fieldValue.forEach((imgNode) => {
+			if (imgNode.type !== "image") return;
+
+			const newSlide = templateSlide.clone(true); // true でイベントもコピー
+			const $img = newSlide.find("img").first();
+
+			$img.attr("src", imgNode.url);
+			$img.attr("alt", imgNode.alt || "");
+
+			newWrapper.append(newSlide);
+		});
+	}
+
+	// 新しい swiper-wrapper を追加
+	clone_swiper.append(newWrapper);
+
+	console.log(clone_swiper[0]);
+
+	// ★ 返すのは .swiper 本体（元の clone_swiper[0] と同じ）
+	return clone_swiper[0];
+};
+
 //フロントエンドで取得した投稿データで書き換える関数
 const ModifyFieldElement = async (
 	element,
@@ -235,8 +313,8 @@ const ModifyFieldElement = async (
 	if (element && element.tagName === "A") {
 		element.setAttribute("href", post.link);
 	}
+
 	//静的コレクションで取得すること
-	//element.setAttribute("data-post-id", post.id);
 	const allElements = element.querySelectorAll("*");
 
 	// 各要素を反復処理
@@ -271,7 +349,6 @@ const ModifyFieldElement = async (
 			const fieldValue = post[fieldName] || costumFieldValue;
 
 			//フィールドとブロックの対応マップからブロック名を抽出
-
 			const blockName = getBlockMapValue(blockMap, fieldName);
 
 			//フィールドの種類によって書き換え方が変わる
@@ -368,12 +445,18 @@ const ModifyFieldElement = async (
 					buttonElement.setAttribute("data-selected_page", valWithPrm);
 					break;
 				case "itmar/slide-mv":
+					//swiper初期化
+					// const swiperEl = reBuildSwiper(el, post_num, fieldValue);
+					// if (swiperEl) {
+					// 	slideBlockSwiperInit(swiperEl);
+					// }
 					jQuery(function ($) {
 						const $el = $(el);
-						//swiper独自ID
 
+						//swiper独自ID
 						const swiperId = `slide-${post_num}`;
 						const clone_swiper = $el.find(".swiper");
+
 						//IDの付け直し
 						clone_swiper.removeData("swiper-id");
 						clone_swiper.attr("data-swiper-id", swiperId);
@@ -418,8 +501,8 @@ const ModifyFieldElement = async (
 						}
 						//新しいswiper-wrapperを追加
 						clone_swiper.append(newWrapper);
-						//swiper初期化
-						slideBlockSwiperInit(clone_swiper);
+
+						slideBlockSwiperInit(clone_swiper[0]);
 					});
 					break;
 			}
@@ -486,12 +569,20 @@ const ModifyFieldElement = async (
 			}
 		}
 		//itmaroon-masonry-gridをクラス名として持つ要素を取得
-		const hasMasonryGridClass = classNames.includes("itmar-masonry-grid");
+		const hasMasonryClass = classNames.includes("wp-block-itmar-masonry-mv");
 
-		if (hasMasonryGridClass) {
+		if (hasMasonryClass) {
 			// ★ この el がマソンリーのグリッド要素
-			const gridEl = el;
-			if (gridEl.getAttribute("data-source-type") === "dynamic") {
+			const gridEl = el.querySelector(".itmar-masonry-grid");
+			let images = [];
+
+			//レスポンシブのフラグ
+			const isMobile =
+				typeof mobile_flg !== "undefined"
+					? mobile_flg
+					: window.matchMedia("(max-width: 767px)").matches;
+
+			if (gridEl?.getAttribute("data-source-type") === "dynamic") {
 				//data-source-typeがdynamicのときだけ
 				// 1) data-choice-fields を配列に戻す
 				let choiceFields = [];
@@ -507,7 +598,6 @@ const ModifyFieldElement = async (
 				}
 
 				// 2) choiceFields に従って post から画像URLを集める
-				const images = [];
 
 				for (const field of choiceFields) {
 					// 本文内の画像 (content)
@@ -577,11 +667,7 @@ const ModifyFieldElement = async (
 						}
 					}
 				}
-				//レスポンシブのフラグ
-				const isMobile =
-					typeof mobile_flg !== "undefined"
-						? mobile_flg
-						: window.matchMedia("(max-width: 767px)").matches;
+
 				//設定されたカラム数の取得
 				const mobileColumns = gridEl.getAttribute("data-mobile-columns");
 				const defaultColumns = gridEl.getAttribute("data-default-columns");
@@ -594,7 +680,87 @@ const ModifyFieldElement = async (
 					columns,
 					renderItems: true, // フロントではこの関数内で <figure> を描画
 				});
+			} else {
+				images = isMobile
+					? JSON.parse(gridEl.getAttribute("data-mobile-media"))
+					: JSON.parse(gridEl.getAttribute("data-default-media"));
 			}
+
+			//swiperを検出して初期化
+			const swiperEls = el.querySelectorAll(".swiper");
+			let expand_masonry = null;
+			if (swiperEls.length > 0) {
+				// swiperEls は NodeList
+				swiperEls.forEach((el) => {
+					jQuery(function ($) {
+						const clone_swiper = $(el);
+						//swiper独自ID
+						const swiperId = `slide-${post_num}`;
+
+						//IDの付け直し
+						clone_swiper.removeData("swiper-id");
+						clone_swiper.attr("data-swiper-id", swiperId);
+						const classPrefixMap = {
+							prev: "swiper-button-prev",
+							next: "swiper-button-next",
+							pagination: "swiper-pagination",
+							scrollbar: "swiper-scrollbar",
+						};
+
+						Object.entries(classPrefixMap).forEach(([suffix, baseClass]) => {
+							const $target = clone_swiper.parent().find(`.${baseClass}`);
+							$target.each(function () {
+								const currentClasses = $(this).attr("class").split(/\s+/);
+								const filteredClasses = currentClasses.filter(
+									(cls) => cls === baseClass,
+								);
+								// 新しい `${swiperId}-${suffix}` を追加
+								filteredClasses.push(`${swiperId}-${suffix}`);
+								$(this).attr("class", filteredClasses.join(" "));
+							});
+						});
+						//swiper-wrapper内からswiper-slideを抽出
+						const wrapper = clone_swiper.find(".swiper-wrapper");
+						const templateSlide = wrapper.find(".swiper-slide").first();
+						//swiper-wrapperオブジェクトをクリア
+						clone_swiper.empty();
+						// 新しい swiper-wrapper を作成
+						const newWrapper = $('<div class="swiper-wrapper"></div>');
+
+						// valueの件数にあわせて、ひな型を複製
+						if (images) {
+							images.forEach((imgNode) => {
+								const newSlide = templateSlide.clone(true); // trueでイベントもコピー
+								//img要素を取り出し画像を差し替え
+								const $img = newSlide.find("img").first();
+								$img.attr("src", imgNode.url);
+								$img.attr("alt", imgNode.alt || "");
+								$img.removeAttr("srcset").removeAttr("sizes");
+								newWrapper.append(newSlide);
+							});
+						}
+
+						//新しいswiper-wrapperを追加
+						clone_swiper.append(newWrapper);
+
+						expand_masonry = slideBlockSwiperInit(clone_swiper[0]);
+					});
+				});
+			}
+			//masonry画像のクリックイベント
+			jQuery(function ($) {
+				$(gridEl).on("click", ".itmar-masonry-link", function (e) {
+					e.preventDefault();
+					const $link = $(this);
+					const index = parseInt($link.data("masonry-index") || 0, 10);
+
+					expand_masonry.instance.slideTo(index);
+
+					expand_masonry.instance.update();
+					const $blockRoot = $(this).closest(".wp-block-itmar-masonry-mv");
+					$blockRoot.find(".itmar-masonry-inner-blocks").children().show();
+				});
+			});
 		}
 	}
 };
@@ -693,7 +859,6 @@ const pickupChange = (pickup, fillFlg, currentPage = 0) => {
 	const targets = pickup.querySelectorAll(
 		".unit_hide .wp-block-itmar-design-title, .wp-block-itmar-design-button, .itmar_ex_block",
 	);
-
 	targets.forEach((el) => {
 		// <div class="hide-wrapper"></div> を作成
 		const wrapper = document.createElement("div");
@@ -1043,6 +1208,22 @@ const pickupChange = (pickup, fillFlg, currentPage = 0) => {
 		.catch((error) => console.error(error));
 };
 
+//クローン生成の関数
+function buildClone(selected) {
+	const $clone = jQuery(selected).clone();
+	$clone
+		.find(
+			".hide-wrapper > .wp-block-itmar-design-title, .wp-block-itmar-design-button, .itmar_ex_block, .itmar_ex_block_wrapper",
+		)
+		.each(function () {
+			const $el = jQuery(this);
+			$el.css("visibility", "visible");
+			if ($el.parent().hasClass("hide-wrapper")) $el.unwrap();
+		});
+
+	return $clone[0];
+}
+
 //テンプレートにコンテンツを流し込む関数
 const replaceContent = async (
 	pickpData,
@@ -1055,6 +1236,7 @@ const replaceContent = async (
 	//通常のpickup
 	if (!fillFlg) {
 		const template = target_block.querySelector(".template_unit");
+
 		if (!template) return; // 念のため防御
 
 		// ② .template_unit の「子要素」を配列にする
@@ -1073,39 +1255,28 @@ const replaceContent = async (
 				}
 			}
 			// ③ 配列から1つ選別（selectTemplateUnit が要素を返す想定）
+
 			const selected =
 				pickupType === "single"
 					? target_array[0]
 					: selectTemplateUnit(target_array, aspectRatio, i + 1);
+
 			if (!selected) return;
 
 			// ④ 選ばれた要素をクローンして target_block に挿入
-			const clone = selected.cloneNode(true);
-			const targets = clone.querySelectorAll(
-				".hide-wrapper > .wp-block-itmar-design-title, .wp-block-itmar-design-button, .itmar_ex_block",
-			);
-
-			targets.forEach((el) => {
-				// visibility を元に戻す（jQuery: $(this).css("visibility", "");）
-				el.style.visibility = "";
-
-				// unwrap 相当（親の .hide-wrapper を外す）
-				const parent = el.parentElement;
-				if (parent && parent.classList.contains("hide-wrapper")) {
-					const grandParent = parent.parentElement;
-					if (grandParent) {
-						// 親要素の直前に el を移動させてから、親を削除
-						grandParent.insertBefore(el, parent);
-						grandParent.removeChild(parent);
-					}
-				}
-			});
+			let clone = buildClone(selected);
 
 			//投稿に紐づいたターム情報を取得
 			const taxTermObjects = [];
+			const def_tax_map = {
+				category: "categories",
+				post_tag: "tags",
+				// 例: カスタムタクソノミー 'product_cat' が REST で /wp/v2/product_cat ならそのまま
+			};
 			for (const tax of dispTaxonomies) {
+				const endpoint = def_tax_map[tax] ?? tax;
 				const term_info = await apiFetch({
-					path: `/wp/v2/${tax}?post=${pickup.id}`,
+					path: `/wp/v2/${endpoint}?post=${pickup.id}`,
 				});
 
 				// ターム名だけの配列を作成
@@ -1120,14 +1291,13 @@ const replaceContent = async (
 			}
 
 			//ブロック要素にデータを注入する
-
 			ModifyFieldElement(clone, pickup, taxTermObjects, block_map, i);
 			//データ注入後にブロック挿入
 			target_block.appendChild(clone);
 		}
 		//ひな型部分は非表示
 		template.style.display = "none"; // jQueryの .hide() 相当
-		// template 内の .hide-wrapper を全部探す
+		//template 内の .hide-wrapper を全部探す
 		const wrappers = template.querySelectorAll(".hide-wrapper");
 		wrappers.forEach((wrapper) => {
 			const parent = wrapper.parentElement;
@@ -1186,7 +1356,7 @@ function selectTemplateUnit(templateUnits, aspectRatio, itmNum) {
 	} else if (aspectRatio < 0.8 && itmNum % 2 === 0) {
 		retTemplate = templateUnits[3];
 	} else {
-		retTemplate = templateUnits[0];
+		retTemplate = templateUnits[(itmNum - 1) % 2];
 	}
 	return retTemplate;
 }
