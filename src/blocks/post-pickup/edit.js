@@ -115,12 +115,20 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	);
 
 	//ブロック属性の更新処理
+
+	const lastSerializedRef = useRef(""); // 前回の内容（文字列）を保持
 	useEffect(() => {
-		if (innerBlocks.length > 0) {
-			const serialized = innerBlocks.map(serializeBlockTree);
-			setAttributes({ blocksAttributesArray: serialized });
-		}
-	}, [innerBlocks]);
+		if (!innerBlocks || innerBlocks.length === 0) return;
+
+		const serialized = innerBlocks.map(serializeBlockTree);
+		const nextStr = JSON.stringify(serialized);
+
+		// 内容が同じなら setAttributes しない（再レンダリング抑制）
+		if (nextStr === lastSerializedRef.current) return;
+
+		lastSerializedRef.current = nextStr;
+		setAttributes({ blocksAttributesArray: serialized });
+	}, [innerBlocks, setAttributes]);
 	//親がitmar/slide-mvの場合のブロック属性の更新処理
 	useEffect(() => {
 		if (!parentBlock || parentBlock.name !== "itmar/slide-mv") return;
