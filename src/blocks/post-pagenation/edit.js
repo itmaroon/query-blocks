@@ -8,6 +8,7 @@ import {
 } from "@wordpress/block-editor";
 import {
 	PanelBody,
+	PanelRow,
 	ToggleControl,
 	SelectControl,
 	RangeControl,
@@ -101,7 +102,11 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		const allFlattenedBlocks = flattenBlocks(targetBlocks);
 		//エディタ内ブロックからitmar/post-pickupを探索
 		setPickupPosts(
-			allFlattenedBlocks.filter((block) => block.name === "itmar/pickup-posts"),
+			allFlattenedBlocks.filter(
+				(block) =>
+					block.name === "itmar/pickup-posts" ||
+					block.name === "itmar/product-block",
+			),
 		);
 	}, [targetBlocks]);
 
@@ -339,20 +344,23 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	return (
 		<>
 			<InspectorControls group="settings">
-				<SelectControl
-					label={__("Select Pickup Posts Block", "query-blocks")}
-					value={selectedBlockId}
-					options={[
-						{ label: __("Select a block", "query-blocks"), value: "" },
-						...pickupPosts.map((block) => ({
-							label: block.attributes.pickupId,
-							value: block.attributes.pickupId,
-						})),
-					]}
-					onChange={(changeOption) => {
-						setAttributes({ selectedBlockId: changeOption });
-					}}
-				/>
+				<div className="itmar_title_type">
+					<SelectControl
+						label={__("Select Pickup Posts Block", "query-blocks")}
+						value={selectedBlockId}
+						options={[
+							{ label: __("Select a block", "query-blocks"), value: "" },
+							...pickupPosts.map((block) => ({
+								label: block.attributes.pickupId,
+								value: block.attributes.pickupId,
+							})),
+						]}
+						onChange={(changeOption) => {
+							setAttributes({ selectedBlockId: changeOption });
+						}}
+					/>
+				</div>
+
 				<PanelBody
 					title={__("Block Display Settings", "query-blocks")}
 					initialOpen={true}

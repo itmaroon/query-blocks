@@ -151,7 +151,9 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	//エディタ内ブロックからitmar/post-pickupを探索
 	const pickupPosts = useMemo(() => {
 		return allFlattenedBlocks.filter(
-			(block) => block.name === "itmar/pickup-posts",
+			(block) =>
+				block.name === "itmar/pickup-posts" ||
+				block.name === "itmar/product-block",
 		);
 	}, [targetBlocks]);
 
@@ -200,15 +202,17 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	}, [innerBlocks]);
 	//pickupの変化に合わせてインナーブロック内のDesign Checkボックスを変更
 	useEffect(() => {
-		const checkedArray = pickup
-			? pickup.attributes.choiceTerms.map((item) => item.term.slug)
-			: [];
-		checkboxBlocks.forEach((block) => {
-			// updateBlockAttributesを使ってinputValueを更新
-			updateBlockAttributes(block.clientId, {
-				inputValue: checkedArray.includes(block.attributes.inputName),
+		if (pickup.attributes.choiceTerms) {
+			const checkedArray = pickup
+				? pickup.attributes.choiceTerms.map((item) => item.term.slug)
+				: [];
+			checkboxBlocks.forEach((block) => {
+				// updateBlockAttributesを使ってinputValueを更新
+				updateBlockAttributes(block.clientId, {
+					inputValue: checkedArray.includes(block.attributes.inputName),
+				});
 			});
-		});
+		}
 	}, [pickup?.attributes.choiceTerms]);
 
 	//インナーブロック内のDesign Radioボックス
@@ -242,37 +246,49 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	//選択されたpickupで設定されているポストタイプに紐づいているタクソノミーをフィルター項目に追加
 	const [filterItems, setFilterItems] = useState(builtin_items);
 	const pickupSlug = pickup?.attributes.selectedSlug;
+	const pickupCategory = pickup?.attributes.categoryArray; //itmaroon-ec-relate-blocksの属性
 	const [isfilterReady, setIsfilterReady] = useState(false); //タクソノミーの情報を取得できたかのフラグ
+
 	useEffect(() => {
-		if (pickupSlug) {
-			restTaxonomies(pickupSlug)
-				.then((response) => {
-					setIsfilterReady(true); //準備完了フラグをオン
-					const taxArray = response.map((res) => {
-						return {
-							value: res.slug,
-							label: res.name,
-							terms: res.terms,
-						};
-					});
-					//一旦タームのついたフィルタ要素は削除
-					const removeTax = filterItems.filter(
-						(item) => !item.hasOwnProperty("terms"),
-					);
-					setFilterItems([...removeTax, ...taxArray]);
-				})
-				.catch((error) => {
-					console.error("投稿の更新に失敗しました", error);
-				});
-		} else {
-			setFilterItems(builtin_items);
-		}
-	}, [pickupSlug]);
+		(async () => {
+			if (pickupSlug) {
+				const response = await restTaxonomies(pickupSlug);
+				setIsfilterReady(true);
+
+				const taxArray = response.map((res) => ({
+					value: res.slug,
+					label: res.name,
+					terms: res.terms,
+				}));
+
+				const removeTax = filterItems.filter(
+					(item) => !item.hasOwnProperty("terms"),
+				);
+				setFilterItems([...removeTax, ...taxArray]);
+			} else if (Array.isArray(pickupCategory) && pickupCategory.length > 0) {
+				//Shopifyの商品カテゴリ
+				const productCategory = {
+					value: "product_category",
+					label: __("Product Category", "query-blocks"),
+					// ここは本来 pickupCategory を terms に落とし込む想定だと思うので例を置きます
+					terms: pickupCategory.map((c, idx) => ({
+						name: c.title ?? c.fullName_ja ?? c.fullName ?? `category-${idx}`,
+						slug: c.handle ?? c.id ?? `cat-${idx}`,
+					})),
+				};
+
+				// ✅ ここがポイント：オブジェクトはそのまま追加
+				setFilterItems([...builtin_items, productCategory]);
+			} else {
+				setFilterItems(builtin_items);
+			}
+		})();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [pickupSlug, pickupCategory]);
 
 	//フィルターアイテムを取得したらインナーブロックにブロックを詰め込む
 	useEffect(() => {
 		const innerBlocksArray = [];
-
 		filterItems.forEach((filterItem) => {
 			let filterBlocksArray = [];
 			//フィルタ設定の対象になっているか

@@ -272,6 +272,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		domType,
 		clientId,
 		insert_id,
+		"query_blocks",
 	);
 
 	//ペースト対象のチェック配列
@@ -301,7 +302,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					<ArchiveSelectControl
 						selectedSlug={selectedSlug}
 						label={__("Select Post Type", "query-blocks")}
-						homeUrl={query_blocks.home_url}
+						homeUrl={itmar_option.home_url}
 						onChange={(postInfo) => {
 							if (postInfo) {
 								setAttributes({
@@ -412,7 +413,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 							const pastBtn = {
 								label: isPastWait ? (
 									<img
-										src={`${query_blocks.plugin_url}/assets/past-wait.gif`}
+										src={`${itmar_option.plugin_url}/assets/past-wait.gif`}
 										alt={__("wait", "query-blocks")}
 										style={{ width: "36px", height: "36px" }} // サイズ調整
 									/>

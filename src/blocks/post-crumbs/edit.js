@@ -50,7 +50,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			targetBlocks: select("core/block-editor").getBlocks(),
 			innerBlocks: select("core/block-editor").getBlocks(clientId),
 		}),
-		[selectedBlockId],
+		[clientId],
 	);
 
 	//ブロックの作成関数
@@ -77,7 +77,11 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		const allFlattenedBlocks = flattenBlocks(targetBlocks);
 		//エディタ内ブロックからitmar/post-pickupを探索
 		setPickupPosts(
-			allFlattenedBlocks.filter((block) => block.name === "itmar/pickup-posts"),
+			allFlattenedBlocks.filter(
+				(block) =>
+					block.name === "itmar/pickup-posts" ||
+					block.name === "itmar/product-block",
+			),
 		);
 
 		//pickupブロックの取得
@@ -104,7 +108,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			const crumbBlock = innerBlocks[0].innerBlocks.find((block) =>
 				block.attributes.className.includes("itmar_design_crumbs"),
 			);
-
 			setAttributes({ crumbBlockAttributes: crumbBlock.attributes });
 		}
 	}, [innerBlocks[0], innerBlocks[0]?.innerBlocks]);
@@ -118,6 +121,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				searchWord,
 				choicePeriod,
 				choiceTerms,
+				categoryArray,
 				taxRelateType,
 			} = pickup.attributes;
 
@@ -163,6 +167,19 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					//インナーブロックの入れ替え
 					replaceInnerBlocks(clientId, [crumbBlock], false);
 				});
+			} else {
+				const disp_name = __("Product", "query-blocks");
+
+				crumbArray.push(blockArrayAdd(disp_name));
+				setAttributes({ postTypeName: disp_name });
+				//Design Groupに入れてレンダリング
+				const crumbBlock = createBlock(
+					"itmar/design-group",
+					groupBlockAttributes, //既にグループがある場合はその属性を引き継ぐ
+					crumbArray,
+				);
+				//インナーブロックの入れ替え
+				replaceInnerBlocks(clientId, [crumbBlock], false);
 			}
 			//検索ワード
 		}

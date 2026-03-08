@@ -69,20 +69,13 @@ function itmar_query_blocks_front()
 {
 	//管理画面以外（フロントエンド側でのみ読み込む）
 	if (!is_admin()) {
-		$script_path = plugin_dir_path(__FILE__) . 'build/front-module.js';
-		wp_enqueue_script(
-			'post_front_handle',
-			plugins_url('build/front-module.js?', __FILE__),
-			array('jquery'),
-			filemtime($script_path),
-			true
-		);
 		if (is_singular()) {
 			global $post;
 			$slug = $post->post_name;
 
+
 			// JavaScriptにスラッグを渡す
-			wp_localize_script('post_front_handle', 'itmar_post_option', array(
+			wp_localize_script('itmar-script-handle', 'itmar_post_option', array(
 				'slug' => $slug,
 			));
 		}
