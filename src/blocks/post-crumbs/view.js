@@ -82,8 +82,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		const { block_style: group_style, ...groupAttr } = groupAll;
 		const { block_style: title_style, ...crumbAttr } = crumbAll;
 
-		console.log(title_style);
-
 		const { titleType, dateFormat, headingType } = crumbAll;
 
 		// タクソノミー情報キャッシュ（termParamObj がある時だけ必要）

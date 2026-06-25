@@ -187,31 +187,30 @@ const ModifyFieldElement = async (
 
 						if (hElement) {
 							// h要素内のdivを探す
-							const divElement = hElement.querySelector("div");
+							//const divElement = hElement.querySelector("div");
+
 							//titleTypeを取り出す
 							const titleType = el.getAttribute("data-title_type");
 
-							if (divElement) {
-								// divのテキストノードを書き換える
-								if (fieldName === "date") {
-									//デザインタイトルのタイトルタイプがdateならフォーマットをあてる
-									if (titleType === "date") {
-										//date_formatを取り出す
-										const dateFormat =
-											el.getAttribute("data-user_format") || "%s";
-										divElement.textContent = format(
-											dateFormat,
-											fieldValue,
-											getSettings(),
-										);
-									} else {
-										divElement.textContent = fieldValue;
-									}
-								} else if (fieldName === "title") {
-									divElement.textContent = fieldValue.rendered;
+							// divのテキストノードを書き換える
+							if (fieldName === "date") {
+								//デザインタイトルのタイトルタイプがdateならフォーマットをあてる
+								if (titleType === "date") {
+									//date_formatを取り出す
+									const dateFormat =
+										el.getAttribute("data-user_format") || "%s";
+									hElement.textContent = format(
+										dateFormat,
+										fieldValue,
+										getSettings(),
+									);
 								} else {
-									divElement.textContent = fieldValue;
+									hElement.textContent = fieldValue;
 								}
+							} else if (fieldName === "title") {
+								hElement.textContent = fieldValue.rendered;
+							} else {
+								hElement.textContent = fieldValue;
 							}
 						}
 					}
