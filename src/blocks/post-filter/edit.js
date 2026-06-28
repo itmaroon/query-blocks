@@ -374,7 +374,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 							: dateOption === "day"
 							? {
 									...dayAttributes,
-									dateSpan: dateSpan,
+									//dateSpan: dateSpan,
 									className: dayAttributes.className
 										? dayAttributes.className.includes("itmar_filter_day")
 											? dayAttributes.className
@@ -714,7 +714,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 				)
 				.map((key) => ({ [key]: pickupCustomFields[key] }))
 		: null;
-	//console.log(targetCustomFields);
 
 	return (
 		<>

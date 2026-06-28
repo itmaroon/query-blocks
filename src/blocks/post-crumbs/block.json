@@ -33,34 +33,34 @@
 					"copy_content": "",
 					"copy_width": 0,
 					"font_style_copy": {
-					  "fontSize": "16px",
-					  "fontFamily": "Arial, sans-serif",
-					  "fontWeight": "500",
-					  "isItalic": false
+					"fontSize": "16px",
+					"fontFamily": "Arial, sans-serif",
+					"fontWeight": "500",
+					"isItalic": false
 					},
 					"radius_copy": {
-					  "topLeft": "10px",
-					  "topRight": "10px",
-					  "bottomRight": "0px",
-					  "bottomLeft": "0px",
-					  "value": "0px"
+					"topLeft": "10px",
+					"topRight": "10px",
+					"bottomRight": "0px",
+					"bottomLeft": "0px",
+					"value": "0px"
 					},
 					"padding_copy": {
-					  "top": "2px",
-					  "left": "2px",
-					  "bottom": "2px",
-					  "right": "2px"
+					"top": "2px",
+					"left": "2px",
+					"bottom": "2px",
+					"right": "2px"
 					},
 					"isIcon": true,
 					"icon_style": {
-					  "icon_name": "f101",
-					  "icon_pos": "left",
-					  "icon_size": "24px",
-					  "icon_color": "#000",
-					  "icon_space": "0px",
-					  "icon_family": "Font Awesome 6 Free"
+					"icon_name": "f101",
+					"icon_pos": "left",
+					"icon_size": "24px",
+					"icon_color": "#000",
+					"icon_space": "0px",
+					"icon_family": "Font Awesome 6 Free"
 					}
-				  }
+				}
 			}
 		}
 	},
