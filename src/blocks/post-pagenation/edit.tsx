@@ -165,7 +165,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					className: "itmar_design_number_btn",
 					align: "center",
 					...commonDefStyle,
-					disableButtonColor: "var(--wp--preset--color--placeholder)",
+					disableButtonColor: "var(--itmar-placeholder)",
 					...numBlockAttributes, // ユーザー設定を優先
 					labelContent: String(page),
 					disabled: page === currentPage,
@@ -181,7 +181,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 					labelContent: "...",
 					align: "center",
 					...commonDefStyle,
-					disableButtonColor: "var(--wp--preset--color--background)",
+					disableButtonColor: "var(--itmar-background)",
 					...dummyBlockAttributes, // ユーザー設定を優先
 					disabled: true,
 				};

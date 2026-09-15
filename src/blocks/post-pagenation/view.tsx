@@ -14,7 +14,7 @@ import {
 	setState,
 	styleDataApply,
 	subscribe,
-} from "itmar-block-packages";
+} from "itmar-block-packages/front";
 import {
 	blockSupportStyleToReactStyle,
 	buildBlockSupportClasses,
