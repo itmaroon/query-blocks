@@ -18,3 +18,13 @@
 		color: var(--itmar-err-message);
 	}
 }
+
+/*
+ * 検索ボタンは縮めない。
+ * 入力欄と横並びになるため、幅が足りないと flex がボタンまで縮め、
+ * 丸いボタンが縦長につぶれる。縮むべきなのは入力欄のほう。
+ * （このクラスはフィルタブロック自身が付ける。edit.tsx の className 指定）
+ */
+.itmar_filter_searchbutton {
+	flex-shrink: 0;
+}

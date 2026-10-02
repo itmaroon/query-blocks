@@ -329,3 +329,15 @@ msgstr ""
 msgctxt "block title"
 msgid "Pickup Posts"
 msgstr ""
+
+#: src/blocks/post-pickup/edit.tsx
+msgid "%s cannot be placed here. The contents of this block are the template for one post and are repeated for each post. Please move it outside this block."
+msgstr ""
+
+#: src/blocks/post-filter/edit.tsx
+msgid "This period makes %1$d choices. Only the first %2$d are shown. Please narrow the period."
+msgstr ""
+
+#: src/blocks/post-crumbs/edit.tsx
+msgid "Product"
+msgstr ""

@@ -318,7 +318,7 @@
         "iconStyle": {
           "icon_name": "f002",
           "icon_size": "24px",
-          "icon_color": "var(--wp--preset--color--content)",
+          "icon_color": "var(--itmar-content)",
           "icon_family": "Font Awesome 6 Free"
         },
         "default_pos": {

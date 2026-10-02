@@ -293,3 +293,15 @@ msgstr ""
 
 #~ msgid "No excerpt"
 #~ msgstr "抜粋なし"
+
+#: src/blocks/post-pickup/edit.tsx
+msgid "%s cannot be placed here. The contents of this block are the template for one post and are repeated for each post. Please move it outside this block."
+msgstr "%s は、ここには置けません。このブロックの中身は投稿1件分のひな型で、投稿の数だけ繰り返されます。このブロックの外へ移動してください。"
+
+#: src/blocks/post-filter/edit.tsx
+msgid "This period makes %1$d choices. Only the first %2$d are shown. Please narrow the period."
+msgstr "この期間では選択肢が %1$d 個になります。先頭の %2$d 個だけを表示します。期間を絞ってください。"
+
+#: src/blocks/post-crumbs/edit.tsx
+msgid "Product"
+msgstr "作品"

@@ -1,4 +1,4 @@
-import { __ } from "@wordpress/i18n";
+import { __, sprintf } from "@wordpress/i18n";
 import "./editor.scss";
 
 import {
@@ -7,6 +7,7 @@ import {
 	InspectorControls,
 } from "@wordpress/block-editor";
 import {
+	Notice,
 	PanelBody,
 	PanelRow,
 	SelectControl,
@@ -49,6 +50,18 @@ const builtin_items = [
 	{ value: "date", label: __("Date", "query-blocks") },
 ];
 
+/*
+ * 連携先（pickup）の探索。
+ * テンプレートパーツの中身は別エンティティの「制御された内部ブロック」なので、
+ * getBlocks() の再帰では出てこない（テンプレートを開くと見つからなくなる）。
+ * getBlocksByName はエディタ全体から名前で探すのでパーツの中まで届く。
+ * 配列の参照を安定させるため、引数の配列はモジュール定数にしておく。
+ */
+const PICKUP_BLOCK_NAMES = ["itmar/pickup-posts", "itmar/product-block"];
+
+//連携先の候補（pickupId の一覧）を区切り文字でつないだ文字列から配列に戻す
+const splitPickupIds = (joined) => (joined ? joined.split("\n") : []);
+
 //ネストしたブロックを平坦化
 const flattenBlocks = (blocks) => {
 	return blocks.reduce((acc, block) => {
@@ -68,6 +81,13 @@ const addClassName = (className = "", addClass) => {
 	return classes.includes(addClass) ? classes.join(" ") : [...classes, addClass].join(" ");
 };
 
+/*
+ * 期間フィルタで作る選択肢の上限。
+ * 月単位で 2000年〜今年 を指定すると 300 個以上のチェックボックスが並び、
+ * 編集も表示も重くなるので歯止めを置く（月なら 10 年分）。
+ */
+export const MAX_PERIOD_ITEMS = 120;
+
 //期間の設定から選択できる月の情報オブジェクトを配列にする関数
 function generateDateArray(dateObj, isMonth) {
 	const { startYear, startMonth, endYear, endMonth } = dateObj;
@@ -79,6 +99,7 @@ function generateDateArray(dateObj, isMonth) {
 			const monthEnd = year === endYear ? endMonth : 12;
 
 			for (let month = monthStart; month <= monthEnd; month++) {
+				if (result.length >= MAX_PERIOD_ITEMS) return result;
 				const unitObj = {
 					id: nanoid(5),
 					value: `${year}/${month.toString().padStart(2, "0")}`,
@@ -88,6 +109,7 @@ function generateDateArray(dateObj, isMonth) {
 				result.push(unitObj);
 			}
 		} else {
+			if (result.length >= MAX_PERIOD_ITEMS) return result;
 			const unitObj = {
 				id: nanoid(5),
 				value: `${year}`,
@@ -124,6 +146,39 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	const { replaceInnerBlocks, updateBlockAttributes } =
 		useDispatch("core/block-editor");
 
+	/*
+	 * 期間の設定を必ず「開始 <= 終了」に収める。
+	 * 逆転すると選択肢を作るループが回らず、期間の絞り込みが空になってしまう。
+	 */
+	const clampDateSpan = (span) => {
+		const thisYear = new Date().getFullYear();
+		const inRange = (val, min, max, fallback) => {
+			const num = Number(val);
+			return Number.isFinite(num)
+				? Math.min(Math.max(num, min), max)
+				: fallback;
+		};
+		const startYear = inRange(span.startYear, 2000, thisYear, 2000);
+		const endYear = inRange(span.endYear, startYear, thisYear, startYear);
+		const startMonth = inRange(span.startMonth, 1, 12, 1);
+		const endMonth =
+			startYear === endYear
+				? inRange(span.endMonth, startMonth, 12, startMonth)
+				: inRange(span.endMonth, 1, 12, 12);
+		return { startYear, startMonth, endYear, endMonth };
+	};
+	//期間の設定を書き換える（収めてから保存する）
+	const setDateSpan = (patch) =>
+		setAttributes({ dateSpan: clampDateSpan({ ...dateSpan, ...patch }) });
+
+	//期間の選択肢がいくつになるか（上限を超えたら知らせる）
+	const periodItemCount =
+		dateOption === "month"
+			? (dateSpan.endYear - dateSpan.startYear) * 12 +
+				(dateSpan.endMonth - dateSpan.startMonth) +
+				1
+			: dateSpan.endYear - dateSpan.startYear + 1;
+
 	//インナーブロックのひな型を用意
 	const TEMPLATE = [];
 	const blockProps = useBlockProps();
@@ -139,36 +194,31 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	});
 
 	//エディタ内ブロックの取得
-	const { targetBlocks, innerBlocks } = useSelect(
-		(select) => ({
-			targetBlocks: select("core/block-editor").getBlocks(),
-			innerBlocks: select("core/block-editor").getBlocks(clientId),
-		}),
-		[selectedBlockId],
+	const { pickupIdsJoined, pickup, innerBlocks } = useSelect(
+		(select) => {
+			const store = select("core/block-editor");
+			const ids = store.getBlocksByName(PICKUP_BLOCK_NAMES);
+			const pickupId = (id) => store.getBlock(id)?.attributes?.pickupId ?? "";
+			const targetId = ids.find((id) => pickupId(id) === selectedBlockId);
+			return {
+				//文字列で返して、ストアが変わるたびの再描画を避ける
+				pickupIdsJoined: ids.map(pickupId).join("\n"),
+				pickup: targetId ? store.getBlock(targetId) : null,
+				innerBlocks: store.getBlocks(clientId),
+			};
+		},
+		[clientId, selectedBlockId],
 	);
-	//全てのブロックを平坦化
-	const allFlattenedBlocks = useMemo(() => {
-		return flattenBlocks(targetBlocks);
-	}, [targetBlocks]);
+	//連携先の候補（インスペクターの選択肢に使う）
+	const pickupIdOptions = useMemo(
+		() => splitPickupIds(pickupIdsJoined),
+		[pickupIdsJoined],
+	);
 
 	//インナーブロックのブロックを平坦化
 	const innerFlattenedBlocks = useMemo(() => {
 		return flattenBlocks(innerBlocks);
 	}, [innerBlocks]);
-
-	//エディタ内ブロックからitmar/post-pickupを探索
-	const pickupPosts = useMemo(() => {
-		return allFlattenedBlocks.filter(
-			(block) =>
-				block.name === "itmar/pickup-posts" ||
-				block.name === "itmar/product-block",
-		);
-	}, [targetBlocks]);
-
-	//pickupブロックの取得
-	const pickup = pickupPosts.find(
-		(block) => block.attributes.pickupId === selectedBlockId,
-	);
 
 	//インナーブロック内の検索用インプットボックス
 	const [searchBox, setSearchBox] = useState(null);
@@ -210,10 +260,15 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	}, [innerBlocks]);
 	//pickupの変化に合わせてインナーブロック内のDesign Checkボックスを変更
 	useEffect(() => {
-		if (pickup.attributes.choiceTerms) {
-			const checkedArray = pickup
-				? pickup.attributes.choiceTerms.map((item) => item.term.slug)
-				: [];
+		/*
+		 * 連携先の pickup がエディタ内に無いことがある（テンプレートパーツを
+		 * 単体で開いたときなど）。以前はここで pickup を直接参照していたため、
+		 * その場合にブロックがエラーで表示できなくなっていた。
+		 */
+		if (pickup?.attributes?.choiceTerms) {
+			const checkedArray = pickup.attributes.choiceTerms.map(
+				(item) => item.term.slug,
+			);
 			checkboxBlocks.forEach((block) => {
 				// updateBlockAttributesを使ってinputValueを更新
 				updateBlockAttributes(block.clientId, {
@@ -547,7 +602,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			}
 
 			//最初に見つかったitmar_filter_searchbuttonブロック
-			const searchButtonBolck = allFlattenedBlocks.find(
+			const searchButtonBolck = innerFlattenedBlocks.find(
 				(block) =>
 					block.name === "itmar/design-button" &&
 					block.attributes.className === "itmar_filter_searchbutton",
@@ -559,7 +614,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			}
 
 			//最初に見つかったitmar_filter_yearブロック
-			const yearRadioBolck = allFlattenedBlocks.find(
+			const yearRadioBolck = innerFlattenedBlocks.find(
 				(block) =>
 					block.name === "itmar/design-radio" &&
 					block.attributes.className?.split(" ").includes("itmar_filter_year"),
@@ -570,7 +625,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			}
 
 			//最初に見つかったitmar_filter_monthブロック
-			const monthRadioBolck = allFlattenedBlocks.find(
+			const monthRadioBolck = innerFlattenedBlocks.find(
 				(block) =>
 					block.name === "itmar/design-radio" &&
 					block.attributes.className?.split(" ").includes("itmar_filter_month"),
@@ -614,7 +669,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			}
 
 			//最初に見つかったitmar_filter_checkboxブロック
-			const checkBolck = allFlattenedBlocks.find(
+			const checkBolck = innerFlattenedBlocks.find(
 				(block) =>
 					block.name === "itmar/design-checkbox" &&
 					block.attributes.className === "itmar_filter_checkbox",
@@ -780,9 +835,9 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 						value={selectedBlockId}
 						options={[
 							{ label: __("Select a block", "query-blocks"), value: "" },
-							...pickupPosts.map((block) => ({
-								label: block.attributes.pickupId,
-								value: block.attributes.pickupId,
+							...pickupIdOptions.map((id) => ({
+								label: id,
+								value: id,
 							})),
 						]}
 						onChange={(changeOption) => {
@@ -886,15 +941,10 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 												<NumberControl
 													label={__("Year", "query-blocks")}
 													labelPosition="side"
-													max={today.getFullYear()}
+													max={dateSpan.endYear}
 													min={2000}
 													onChange={(newValue) => {
-														setAttributes({
-															dateSpan: {
-																...dateSpan,
-																startYear: Number(newValue),
-															},
-														});
+														setDateSpan({ startYear: Number(newValue) });
 													}}
 													value={dateSpan.startYear}
 												/>
@@ -904,12 +954,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 													max={12}
 													min={1}
 													onChange={(newValue) => {
-														setAttributes({
-															dateSpan: {
-																...dateSpan,
-																startMonth: Number(newValue),
-															},
-														});
+														setDateSpan({ startMonth: Number(newValue) });
 													}}
 													value={dateSpan.startMonth}
 												/>
@@ -920,14 +965,9 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 													label={__("Year", "query-blocks")}
 													labelPosition="side"
 													max={today.getFullYear()}
-													min={2000}
+													min={dateSpan.startYear}
 													onChange={(newValue) => {
-														setAttributes({
-															dateSpan: {
-																...dateSpan,
-																endYear: Number(newValue),
-															},
-														});
+														setDateSpan({ endYear: Number(newValue) });
 													}}
 													value={dateSpan.endYear}
 												/>
@@ -935,18 +975,30 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 													label={__("Month", "query-blocks")}
 													labelPosition="side"
 													max={12}
-													min={1}
+													min={
+														dateSpan.startYear === dateSpan.endYear
+															? dateSpan.startMonth
+															: 1
+													}
 													onChange={(newValue) => {
-														setAttributes({
-															dateSpan: {
-																...dateSpan,
-																endMonth: Number(newValue),
-															},
-														});
+														setDateSpan({ endMonth: Number(newValue) });
 													}}
 													value={dateSpan.endMonth}
 												/>
 											</PanelRow>
+											{periodItemCount > MAX_PERIOD_ITEMS && (
+												<Notice status="warning" isDismissible={false}>
+													{sprintf(
+														/* translators: %1$d: number of choices, %2$d: maximum */
+														__(
+															"This period makes %1$d choices. Only the first %2$d are shown. Please narrow the period.",
+															"query-blocks",
+														),
+														periodItemCount,
+														MAX_PERIOD_ITEMS,
+													)}
+												</Notice>
+											)}
 										</>
 									)}
 								{filter.value === "date" &&
@@ -958,15 +1010,10 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 												<NumberControl
 													label={__("Year", "query-blocks")}
 													labelPosition="side"
-													max={today.getFullYear()}
+													max={dateSpan.endYear}
 													min={2000}
 													onChange={(newValue) => {
-														setAttributes({
-															dateSpan: {
-																...dateSpan,
-																startYear: Number(newValue),
-															},
-														});
+														setDateSpan({ startYear: Number(newValue) });
 													}}
 													value={dateSpan.startYear}
 												/>
@@ -977,14 +1024,9 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 													label={__("Year", "query-blocks")}
 													labelPosition="side"
 													max={today.getFullYear()}
-													min={2000}
+													min={dateSpan.startYear}
 													onChange={(newValue) => {
-														setAttributes({
-															dateSpan: {
-																...dateSpan,
-																endYear: Number(newValue),
-															},
-														});
+														setDateSpan({ endYear: Number(newValue) });
 													}}
 													value={dateSpan.endYear}
 												/>

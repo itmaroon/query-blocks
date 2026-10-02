@@ -28,7 +28,7 @@
 				"optionStyle":{
 					"styleName": "is-style-sub_copy",
 					"alignment_copy": "center right",
-					"color_text_copy": "var(--wp--preset--color--content)",
+					"color_text_copy": "var(--itmar-content)",
 					"color_background_copy": "transparent",
 					"copy_content": "",
 					"copy_width": 0,

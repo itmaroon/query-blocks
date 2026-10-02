@@ -1,7 +1,7 @@
 import { useSelect, useDispatch } from "@wordpress/data";
 import isEqual from "lodash/isEqual";
 
-import { __ } from "@wordpress/i18n";
+import { __, sprintf } from "@wordpress/i18n";
 
 import "./editor.scss";
 import {
@@ -101,6 +101,19 @@ const normalizeGallerySlideClass = (blocks) =>
 		}),
 	);
 
+/*
+ * この中に置けるブロック。ここの中身は「カードのひな型」として投稿の数だけ
+ * 複製されるので、ページ送りや絞り込みのような1つしか要らないブロックを
+ * 入れてはいけない（入れてもひな型の一部として複製されるだけ）。
+ */
+const ALLOWED_BLOCKS = [
+	"itmar/design-group",
+	"itmar/design-title",
+	"core/image",
+	"core/paragraph",
+	"itmar/design-button",
+];
+
 export default function Edit({ attributes, setAttributes, clientId }) {
 	const {
 		pickupId,
@@ -140,16 +153,17 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	const TEMPLATE = [];
 	const blockProps = useBlockProps();
 	const innerBlocksProps = useInnerBlocksProps(blockProps, {
-		allowedBlocks: [
-			"itmar/design-group",
-			"itmar/design-title",
-			"core/image",
-			"core/paragraph",
-			"itmar/design-button",
-		],
+		allowedBlocks: ALLOWED_BLOCKS,
 		template: TEMPLATE,
 		templateLock: false,
 	});
+
+	//置けないブロックが入っていないかを見る（貼り付けや移植で入ることがある）
+	const blockTitle = useSelect(
+		(select) => (name) =>
+			select("core/blocks").getBlockType(name)?.title ?? name,
+		[],
+	);
 
 	//第一階層のインナーブロックの取得
 	const { innerBlocks, parentBlock, parentId } = useSelect(
@@ -170,6 +184,15 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	);
 
 	//ブロック属性の更新処理
+	//置けないブロックの名前（インスペクターと編集領域で知らせる）
+	const forbiddenBlocks = useMemo(
+		() =>
+			(innerBlocks || [])
+				.filter((block) => !ALLOWED_BLOCKS.includes(block.name))
+				.map((block) => blockTitle(block.name)),
+		[innerBlocks],
+	);
+
 
 	const lastSerializedRef = useRef(""); // 前回の内容（文字列）を保持
 	const isRebuildingRef = useRef(false);
@@ -662,6 +685,18 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			{/* 親ブロックがitmar/slide-mvのときはレンダリングしない */}
 			{(!parentBlock || parentBlock.name !== "itmar/slide-mv") && (
 				<div className="outer_frame">
+					{forbiddenBlocks.length > 0 && (
+						<Notice status="error" isDismissible={false}>
+							{sprintf(
+								/* translators: %s: block titles */
+								__(
+									"%s cannot be placed here. The contents of this block are the template for one post and are repeated for each post. Please move it outside this block.",
+									"query-blocks",
+								),
+								forbiddenBlocks.join(" / "),
+							)}
+						</Notice>
+					)}
 					<div className="edit_area">
 						<div {...innerBlocksProps} />
 					</div>

@@ -15,7 +15,7 @@ import {
 	RadioControl,
 } from "@wordpress/components";
 
-import { useEffect, useState, useCallback } from "@wordpress/element";
+import { useEffect, useState, useCallback, useMemo } from "@wordpress/element";
 import { useSelect, useDispatch } from "@wordpress/data";
 import { createBlock } from "@wordpress/blocks";
 
@@ -45,6 +45,18 @@ const units = [
 	{ value: "em", label: "em" },
 	{ value: "rem", label: "rem" },
 ];
+
+/*
+ * 連携先（pickup）の探索。
+ * テンプレートパーツの中身は別エンティティの「制御された内部ブロック」なので、
+ * getBlocks() の再帰では出てこない（テンプレートを開くと見つからなくなる）。
+ * getBlocksByName はエディタ全体から名前で探すのでパーツの中まで届く。
+ * 配列の参照を安定させるため、引数の配列はモジュール定数にしておく。
+ */
+const PICKUP_BLOCK_NAMES = ["itmar/pickup-posts", "itmar/product-block"];
+
+//連携先の候補（pickupId の一覧）を区切り文字でつないだ文字列から配列に戻す
+const splitPickupIds = (joined) => (joined ? joined.split("\n") : []);
 
 //ネストしたブロックを平坦化
 const flattenBlocks = (blocks) => {
@@ -86,29 +98,26 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 	});
 
 	//エディタ内ブロックの取得
-	const { targetBlocks, innerBlocks } = useSelect(
-		(select) => ({
-			targetBlocks: select("core/block-editor").getBlocks(),
-			innerBlocks: select("core/block-editor").getBlocks(clientId),
-		}),
-		[selectedBlockId],
+	const { pickupIdsJoined, pickup, innerBlocks } = useSelect(
+		(select) => {
+			const store = select("core/block-editor");
+			const ids = store.getBlocksByName(PICKUP_BLOCK_NAMES);
+			const pickupId = (id) => store.getBlock(id)?.attributes?.pickupId ?? "";
+			const targetId = ids.find((id) => pickupId(id) === selectedBlockId);
+			return {
+				//文字列で返して、ストアが変わるたびの再描画を避ける
+				pickupIdsJoined: ids.map(pickupId).join("\n"),
+				pickup: targetId ? store.getBlock(targetId) : null,
+				innerBlocks: store.getBlocks(clientId),
+			};
+		},
+		[clientId, selectedBlockId],
 	);
-
-	//エディタ内のブロックが変化したときpickupを更新
-	const [pickupPosts, setPickupPosts] = useState([]);
-
-	useEffect(() => {
-		//エディタ内ブロックを平坦化
-		const allFlattenedBlocks = flattenBlocks(targetBlocks);
-		//エディタ内ブロックからitmar/post-pickupを探索
-		setPickupPosts(
-			allFlattenedBlocks.filter(
-				(block) =>
-					block.name === "itmar/pickup-posts" ||
-					block.name === "itmar/product-block",
-			),
-		);
-	}, [targetBlocks]);
+	//連携先の候補（インスペクターの選択肢に使う）
+	const pickupIdOptions = useMemo(
+		() => splitPickupIds(pickupIdsJoined),
+		[pickupIdsJoined],
+	);
 
 	//表示数と投稿数を取得したらインナーブロックにdesign-buttonを詰め込む
 	useEffect(() => {
@@ -350,9 +359,9 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 						value={selectedBlockId}
 						options={[
 							{ label: __("Select a block", "query-blocks"), value: "" },
-							...pickupPosts.map((block) => ({
-								label: block.attributes.pickupId,
-								value: block.attributes.pickupId,
+							...pickupIdOptions.map((id) => ({
+								label: id,
+								value: id,
 							})),
 						]}
 						onChange={(changeOption) => {

@@ -7,6 +7,13 @@
 
 .wp-block-itmar-post-pagenation {
 	box-sizing: border-box;
+	/*
+	 * 中身のグループは幅を割合で指定できる（「幅いっぱい」＝100%）。
+	 * その基準になるこの要素に幅が無いと、割合の指定が効かず、
+	 * グループがテーマの「広い幅」のまま親からはみ出す。
+	 * post-filter / post-pickup は元から 100% を持っている。
+	 */
+	width: 100%;
 
 	.error {
 		color: var(--itmar-err-message);

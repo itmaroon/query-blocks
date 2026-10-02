@@ -63,9 +63,14 @@ const parseJson = (s, fallback = {}) => {
 
 const DesignGroup = ({ attributes, children = null }) => {
 	const { block_style: blockStyle, ...groupAttributes } = attributes;
+	/*
+	 * 作者が指定した値（プリセット参照）を、計算済みの値より後に重ねる。
+	 * block_style はエディターがそのときの環境で解決したピクセル値なので、
+	 * 先に重ねると移植先でテーマの余白設定が効かなくなる。
+	 */
 	const groupStyle = mergeReactStyles(
-		blockSupportStyleToReactStyle(groupAttributes),
 		toReactStyle(blockStyle),
+		blockSupportStyleToReactStyle(groupAttributes),
 	);
 	const groupClassName = buildBlockSupportClasses(groupAttributes);
 
@@ -96,8 +101,8 @@ const AdjacentPostLink = ({ post, attributes }) => {
 
 	const { block_style: blockStyle, ...titleAttributes } = attributes;
 	const titleStyle = mergeReactStyles(
-		blockSupportStyleToReactStyle(titleAttributes),
 		toReactStyle(blockStyle),
+		blockSupportStyleToReactStyle(titleAttributes),
 	);
 	const titleClassName = buildBlockSupportClasses(titleAttributes);
 	const headingType = String(titleAttributes.headingType || "H3").toLowerCase();

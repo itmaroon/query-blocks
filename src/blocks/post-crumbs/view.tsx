@@ -97,14 +97,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
 		const { block_style: group_style, ...groupAttr } = groupAll;
 		const { block_style: title_style, ...crumbAttr } = crumbAll;
+		/*
+		 * 作者が指定した値（プリセット参照）を、計算済みの値より後に重ねる。
+		 * block_style はエディターがそのときの環境で解決したピクセル値なので、
+		 * 先に重ねると移植先でテーマの余白設定が効かなくなる。
+		 */
 		const groupStyle = mergeReactStyles(
-			blockSupportStyleToReactStyle(groupAttr),
 			toReactStyle(group_style),
+			blockSupportStyleToReactStyle(groupAttr),
 		);
 		const groupClassName = buildBlockSupportClasses(groupAttr);
 		const titleStyle = mergeReactStyles(
-			blockSupportStyleToReactStyle(crumbAttr),
 			toReactStyle(title_style),
+			blockSupportStyleToReactStyle(crumbAttr),
 		);
 		const titleClassName = buildBlockSupportClasses(crumbAttr);
 
