@@ -3,7 +3,7 @@ Contributors:      itmaroon
 Tags:              block, post, taxsonomy, field, query
 Requires at least: 6.4
 Tested up to:      7.1
-Stable tag:        2.0.4
+Stable tag:        2.1.0
 License:           GPL-2.0-or-later
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
 Requires PHP: 8.2.10
@@ -76,6 +76,10 @@ OR…
 8. Post Pagination forward/backward navigation
 
 == Changelog ==
+= 2.1.0 =
+- Rebuilt Post Pickup, Post Filter, Post Pagenation and Post Crumbs with the latest shared packages; colors read the `--itmar-*` role variables.
+- Updated the Japanese translation.
+
 = 2.0.4 =
 - Colors now read the `--itmar-*` slots provided by Block Collections, with theme-independent fallbacks.
 - Post Pagenation imports its shared helpers from `itmar-block-packages/front`.
@@ -108,6 +112,10 @@ Fixed a bug in Post Pickup where the selection button was not displayed when the
 
 = 1.0.0 =
 * Release
+
+== Upgrade Notice ==
+= 2.1.0 =
+Rebuilt with the latest shared packages; colors follow the active theme. No configuration changes are required.
 
 == Arbitrary section ==
 1. PHP class management is now done using Composer.  
