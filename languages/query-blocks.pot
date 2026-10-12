@@ -2,14 +2,14 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Query Blocks 2.1.0\n"
+"Project-Id-Version: Query Blocks 2.1.1\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/query-blocks\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-06T05:13:17+02:00\n"
+"POT-Creation-Date: 2026-10-11T05:31:30+02:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: query-blocks\n"
@@ -126,6 +126,12 @@ msgstr ""
 
 #: build/blocks/post-filter/index.js:2
 msgid "Taxonomy Setting"
+msgstr ""
+
+#. translators: %s: name of the taxonomy (for example "Creator").
+#: build/blocks/post-filter/view.js:3
+#, js-format
+msgid "No choices are shown for \"%s\" because this taxonomy has no terms yet. Add terms and assign them to posts, and the choices appear here."
 msgstr ""
 
 #: build/blocks/post-pagenation/index.js:1

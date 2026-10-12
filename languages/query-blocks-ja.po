@@ -4,8 +4,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Query Blocks 0.1.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/query-blocks\n"
-"POT-Creation-Date: 2026-10-06T05:13:17+02:00\n"
-"PO-Revision-Date: 2026-10-06 12:16+0900\n"
+"POT-Creation-Date: 2026-10-11T05:31:30+02:00\n"
+"PO-Revision-Date: 2026-10-11 12:33+0900\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: ja\n"
@@ -130,6 +130,15 @@ msgstr ""
 #: build/blocks/post-filter/index.js:2
 msgid "Taxonomy Setting"
 msgstr "タクソノミーの設定"
+
+#. translators: %s: name of the taxonomy (for example "Creator").
+#: build/blocks/post-filter/view.js:3
+msgid ""
+"No choices are shown for \"%s\" because this taxonomy has no terms yet. Add "
+"terms and assign them to posts, and the choices appear here."
+msgstr ""
+"このタクソノミーにはまだタームがないため、\"%s\"の選択肢は表示されません。"
+"タームを追加して投稿に割り当てると、ここに選択肢が表示されるようになります。"
 
 #: build/blocks/post-pagenation/index.js:1
 msgid ""

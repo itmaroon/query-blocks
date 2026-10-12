@@ -28,3 +28,11 @@
 .itmar_filter_searchbutton {
 	flex-shrink: 0;
 }
+
+// 分類に語（ターム）がないとき、管理する人にだけ出る案内（view.tsx）。見た目は、テーマで上書きできる
+.wp-block-itmar-post-filter .itmar-filter-notice {
+	margin: 0.5em 0;
+	padding: 0.5em 0.75em;
+	border: 1px dashed currentColor;
+	font-size: 0.85em;
+}

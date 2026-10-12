@@ -1,4 +1,5 @@
 import apiFetch from "@wordpress/api-fetch";
+import { __ } from "@wordpress/i18n";
 import {
 	restTaxonomies,
 	getPeriodQuery,
@@ -202,6 +203,35 @@ function pruneInvalidCheckboxes(filterContainer: Element, taxArray) {
 		const termKeys = (tax.terms || []).map((term) =>
 			String(term.slug || term.id),
 		);
+
+		// その分類に、語（ターム）が 1 つもないとき、選択肢は、作れない（移植した直後など。語は、サイトごとの内容なので、移されない）。
+		// 何も出ないまま、理由が分からないことがないよう、サイトを管理する人（ログイン中）には、理由を表示する。訪問者には、空の枠を見せない。
+		if (termKeys.length === 0) {
+			taxGroup
+				.querySelectorAll(".itmar_filter_checkbox")
+				.forEach((block) => block.remove());
+			const noticeHost =
+				Array.from(taxGroup.children).find((child) =>
+					child.classList.contains("group_contents"),
+				) || taxGroup;
+			// 描き直しで、2 度呼ばれても、案内は 1 つだけ
+			if (
+				document.body.classList.contains("logged-in") &&
+				!noticeHost.querySelector(".itmar-filter-notice")
+			) {
+				const notice = document.createElement("p");
+				notice.className = "itmar-filter-notice";
+				/* translators: %s: name of the taxonomy (for example "Creator"). */
+				notice.textContent = __(
+					'No choices are shown for "%s" because this taxonomy has no terms yet. Add terms and assign them to posts, and the choices appear here.',
+					"query-blocks",
+				).replace("%s", String(tax.label || tax.value));
+				noticeHost.appendChild(notice);
+			} else if (!document.body.classList.contains("logged-in")) {
+				(taxGroup as HTMLElement).style.display = "none";
+			}
+			return;
+		}
 		const termLabelMap = new Map();
 		(tax.terms || []).forEach((term) => {
 			const key = String(term.slug || term.id);

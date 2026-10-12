@@ -3,7 +3,7 @@ Contributors:      itmaroon
 Tags:              block, post, taxsonomy, field, query
 Requires at least: 6.4
 Tested up to:      7.1
-Stable tag:        2.1.0
+Stable tag:        2.1.1
 License:           GPL-2.0-or-later
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
 Requires PHP: 8.2.10
@@ -76,6 +76,9 @@ OR…
 8. Post Pagination forward/backward navigation
 
 == Changelog ==
+= 2.1.1 =
+- Post Filter: when a taxonomy has no terms yet (for example right after moving a theme to another site), logged-in users now see a notice explaining why no choices appear. Visitors no longer see an empty group.
+
 = 2.1.0 =
 - Rebuilt Post Pickup, Post Filter, Post Pagenation and Post Crumbs with the latest shared packages; colors read the `--itmar-*` role variables.
 - Updated the Japanese translation.
@@ -114,6 +117,9 @@ Fixed a bug in Post Pickup where the selection button was not displayed when the
 * Release
 
 == Upgrade Notice ==
+= 2.1.1 =
+Adds an explanatory notice when a filtered taxonomy has no terms. No configuration changes are required.
+
 = 2.1.0 =
 Rebuilt with the latest shared packages; colors follow the active theme. No configuration changes are required.
 
